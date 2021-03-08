@@ -9,14 +9,29 @@ def tanh(z):
     return np.tanh(z)
     
     
-def sin(z)
+def sin(z):
     return np.sin(z)
     
     
-def reLu(z)
+def reLu(z):
     return np.max(z,0)
     
 
 def softmax(Z,index):
     return np.exp(Z[index])/np.sum(np.exp(Z))
+    
+    
+def der_sigmoid(z):
+    return sigmoid(z)(1- sigmoid(z))
+    
+def der_tanh(z):
+    return (1 - tanh(z))**2
+
+
+def der_reLU(z):
+    if z < 0:
+        a = 0
+    else:
+        a = 1
+    return a
     

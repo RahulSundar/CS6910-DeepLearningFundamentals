@@ -15,3 +15,8 @@ def sin(z)
     
 def reLu(z)
     return np.max(z,0)
+    
+
+def softmax(Z,index):
+    return np.exp(Z[index])/np.sum(np.exp(Z))
+    

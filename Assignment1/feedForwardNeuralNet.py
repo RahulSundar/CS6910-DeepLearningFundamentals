@@ -32,7 +32,7 @@ class FeedForwardNeuralNetwork():
             biases.append(b)
         return weights, biases
 
-    def feedForwardNeuralNet(Input_data, weights, biases, activation):
+    def feedForwardNeuralNet(self, Input_data, weights, biases, activation):
         """
         Returns the neural network given input data, weights, biases.
         Arguments:
@@ -57,3 +57,15 @@ class FeedForwardNeuralNetwork():
         Y = np.add(np.matmul(H, W), b)
         return Y    
 
+
+    def backPropagate(self,)
+    
+        
+        for l in range(num_layers - 1, 0):
+            if l == num_layers-1:
+                pass
+            elif l == 0:
+                pass
+            else:
+                gradients_hiddenlayers
+        return gradients_loss_weights, graidents_loss_biases

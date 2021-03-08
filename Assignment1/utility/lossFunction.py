@@ -1,16 +1,11 @@
 import numpy as np
 
 
-def SquaredErrorLoss(X,Y,f):
-    err = 0.0
-    for x,y in zip(X,Y):
-        fx = f(w,b,x)
-        err += 0.5 * (fx - y)**2
-    return err
+def meanSquaredErrorLoss(Y_train,Y_pred):
+    MSE = np.mean((Y_train - Y_pred)**2)
+    return MSE
     
-def meanSquaredErrorLoss(X,Y,f):
-    pass
-
-
-def crossEntropyLoss():
-    pass
+def crossEntropyLoss(P, Q):
+    CE = [-P[i]*np.log(Q[i]) for i in range(len(Q)) ]
+    crossEntropy = np.sum(CE)
+    return crossEntropy

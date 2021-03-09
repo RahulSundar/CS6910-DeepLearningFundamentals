@@ -87,24 +87,8 @@ def forwardPropagate(self, X_train_batch, weights, biases, activation):
     return Y, H, A
         
         
-#Back prop trial code. Lot of cleanup to be done. May be a dictionary/ simple list of arrays should work. 
-def backPropagate(Y,H,A,Y_train, der_activation): 
-    gradients_weights = [] 
-    gradients_biases = [] 
-    num_layers = len(layers) 
-    globals()["grad_a"+str(len(layers)-1)] = -np.array(Y_train - Y).transpose() 
-    for l in range(num_layers - 2, -1,-1): 
-         globals()["grad_W"+str(l+1)] = np.outer(globals()["grad_a"+str(l+1)], H[l]) 
-         globals()["grad_b"+str(l+1)] = globals()["grad_a"+str(l+1)] 
-         gradients_weights.append(globals()["grad_W"+str(l+1)]) 
-         gradients_biases.append(globals()["grad_b"+str(l+1)]) 
-         globals()["grad_h"+str(l)] = np.matmul(weights[l], globals()["grad_a"+str(l+1)]) 
-         globals()["grad_a"+str(l)] = np.multiply(globals()["grad_h"+str(l)], der_activation(A[l]).transpose()) 
-    return gradients_weights, gradients_biases
-    
-    
-    
-def backPropagate2(self, Y,H,A,Y_train_batch): 
+#Back prop trial code. Lot of cleanup to be done. May be a dictionary/ simple list of arrays should work.     
+def backPropagate(self, Y,H,A,Y_train_batch): 
     gradients_preactivations = []
     gradients_activations = []
     gradients_weights = [] 
@@ -149,8 +133,8 @@ def GradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning
             deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
             num_points_seen = 0
             for i in range(length_dataset):
-                Y,H,A = forwardPropagate(X_train[:,], weights, biases, activation) 
-                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train_batch)
+                Y,H,A = forwardPropagate(X_train[i,:], weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i])
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
             weights = [weights[i] + deltaw[i] for i in range(len(weights))] 

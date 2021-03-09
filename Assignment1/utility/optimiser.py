@@ -13,144 +13,261 @@ class Optimiser():
         self.max_epochs = max_epochs
         
     
-    def do_gradient_descent(self):
+    def batchGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers)
+        
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train_batch, weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train_batch)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
+                num_points_seen +=1
+                if int(num_points_seen) % batch_size == 0:
+                    weights = [weights[i] - deltaw[i] for i in range(len(weights))] 
+                    biases = [biases[i] - deltab[i] for i in range(len(biases))]
+                    #resetting gradient updates
+                    deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+                    deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        return weights, biases
+                             
+                             
+                             
+    def gradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
+            weights = [weights[i] - learning_rate*deltaw[i] for i in range(len(weights))] 
+            biases = [biases[i] - learning_rate*deltab[i] for i in range(len(biases))]
 
-        w, b , eta = init_w, init_b, 1.0
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            for x,y in zip(X,Y):
-                dw += grad_w(w,b,x,y)
-                db += grad_b(w,b,x,y)
-            w = w - eta*dw
-            b = b - eta*db
-        return w, b
+        return weights, biases
 
 
-    def do_momentum_gradient_descent(self):
-
-        w, b, eta = init_w, init_b, 1.0
-        prev_v_w, prev_v_b, gamma = 0.0, 0.0, 0.9
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            for x,y in zip(X,Y):
-                dw += grad_w(w,b,x,y)
-                db += grad_b(w,b,x,y)
-                
-            v_w = gamma*prev_v_w + eta*dw
-            v_b = gamma*prev_v_b + eta*db
+    
+    def momentumGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        gamma = 0.9
+        prev_v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        prev_v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
             
-            w = w - v_w
-            b = b - v_b
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
             
+            v_w = [gamma*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
+            v_b = [gamma*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
+            
+            weights = [weights[i] - v_w[i] for i in range(len(weights))] 
+            biases = [biases[i] - v_b[i] for i in range(len(biases))]
             prev_v_w = v_w
             prev_v_b = v_b
-            
-        return w, b
-        
-        
-        
-    def do_stochastic_momentum_gradient_descent(self):
+        return weights, biases
 
-        w, b, eta = init_w, init_b, 1.0
-        prev_v_w, prev_v_b, gamma = 0.0, 0.0, 0.9
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            for x,y in zip(X,Y):
-                dw += grad_w(w,b,x,y)
-                db += grad_b(w,b,x,y)
-                
-                v_w = gamma*prev_v_w + eta*dw
-                v_b = gamma*prev_v_b + eta*db
-                
-                w = w - v_w
-                b = b - v_b
-                
+
+
+
+
+    def stochasticMomentumGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        gamma = 0.9
+        prev_v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        prev_v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] for i in range(num_layers - 1)]
+            
+                v_w = [gamma*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
+                v_b = [gamma*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
+            
+                weights = [weights[i] - v_w[i] for i in range(len(weights))] 
+                biases = [biases[i] - v_b[i] for i in range(len(biases))]
                 prev_v_w = v_w
                 prev_v_b = v_b
-            
-        return w, b
-            
-    def do_nesterov_gradient_descent(self):
+        
+        return weights, biases
 
-        w, b, eta = init_w, init_b, 1.0
-        prev_v_w, prev_v_b, gamma = 0.0, 0.0, 0.9
-        
-        
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            winter = w - gamma*prev_v_w
-            binter = b - gamma*prev_v_b
-            for x,y in zip(X,Y):
-                dw += grad_w(winter,b,x,y)
-                db += grad_b(winter,b,x,y)
-                
-            v_w = gamma*prev_v_w + eta*dw
-            v_b = gamma*prev_v_b + eta*db
+
+
+
+    def nesterovGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        gamma = 0.9
+        prev_v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        prev_v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            winter = [weights[i] - gamma*prev_v_w[i] for l in range(0, len(layers)-1)]  
+            binter = [biases[i] - gamma*prev_v_b[i] for l in range(0, len(layers)-1)]
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), winter, binter, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
             
-            w = w - v_w
-            b = b - v_b
-            
+            v_w = [gamma*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
+            v_b = [gamma*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
+        
+            weights = [weights[i] - v_w[i] for i in range(len(weights))] 
+            biases = [biases[i] - v_b[i] for i in range(len(biases))]
             prev_v_w = v_w
             prev_v_b = v_b
+    
+        return weights, biases
+    
+    
+    
+    
+    
+    def stochasticNesterovGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        gamma = 0.9
+        prev_v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        prev_v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            winter = [weights[i] - gamma*prev_v_w[i] for l in range(0, len(layers)-1)]  
+            binter = [biases[i] - gamma*prev_v_b[i] for l in range(0, len(layers)-1)]
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), winter, binter, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] for i in range(num_layers - 1)]
             
-        return w, b        
+                v_w = [gamma*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
+                v_b = [gamma*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
             
-
-    def do_stochastic_nesterov_gradient_descent(self):
-
-        w, b, eta = init_w, init_b, 1.0
-        prev_v_w, prev_v_b, gamma = 0.0, 0.0, 0.9
-        
-        
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            winter = w - gamma*prev_v_w
-            binter = b - gamma*prev_v_b
-            for x,y in zip(X,Y):
-                dw += grad_w(winter,b,x,y)
-                db += grad_b(winter,b,x,y)
-                
-                v_w = gamma*prev_v_w + eta*dw
-                v_b = gamma*prev_v_b + eta*db
-                
-                w = w - v_w
-                b = b - v_b
-                
+                weights = [weights[i] - v_w[i] for i in range(len(weights))] 
+                biases = [biases[i] - v_b[i] for i in range(len(biases))]
                 prev_v_w = v_w
                 prev_v_b = v_b
-            
-        return w, b 
-            
-            
-    def do_stochastic_gradient_descent(self):
+    
+        return weights, biases
+    
+    def stochasticGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            num_points_seen = 0
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] for i in range(num_layers - 1)]
+                weights = [weights[i] - learning_rate*deltaw[i] for i in range(len(weights))] 
+                biases = [biases[i] - learning_rate*deltab[i] for i in range(len(biases))]
 
-        w, b , eta = init_w, init_b, 1.0
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            for x,y in zip(X,Y):
-                dw += grad_w(w,b,x,y)
-                db += grad_b(w,b,x,y)
-                w = w - eta*dw
-                b = b - eta*db
-        return w, b       
-        
-        
-        
-    def do_mini_batch_gradient_descent(self):
+        return weights, biases
+    
+    
+    
 
-        w, b , eta = init_w, init_b, 1.0
-        mini_batch, number_of_points_seen = 2.0, 0
-        for i in range(self.max_epochs):
-            dw, db  = 0.0, 0.0
-            for x,y in zip(X,Y):
-                dw += grad_w(w,b,x,y)
-                db += grad_b(w,b,x,y)
-                number_of_points_seen += 1
-                
-                if number_of_points_seen % mini_batch == 0:
-                    w = w - eta*dw
-                    b = b - eta*db
-                    dw, db = 0.0, 0.0 # resetting gradients - why though?
-        return w, b   
+    def rmsProp(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        eps, beta = 1e-8, 0.9
+        v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
             
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
+            
+            v_w = [beta*v_w[i] + (1-beta)*deltaw[i]**2 for i in range(num_layers - 1)]
+            v_b = [beta*v_b[i] + (1-beta)*deltab[i]**2 for i in range(num_layers - 1)]
+            
+            weights = [weights[i] - learning_rate/np.sqrt(v_w[i]+eps) for i in range(len(weights))] 
+            biases = [biases[i] - learning_rate/np.sqrt(v_b[i]+eps) for i in range(len(biases))]
+
+        return weights, biases
+    
+    
+
+    def adam(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        eps, beta1, beta2 = 1e-8, 0.9, 0.99
+        m_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        m_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]        
+
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
+
+            m_w = [beta*m_w[i] + (1-beta1)*deltaw[i] for i in range(num_layers - 1)]
+            m_b = [beta*m_b[i] + (1-beta1)*deltab[i] for i in range(num_layers - 1)]
+            v_w = [beta*v_w[i] + (1-beta2)*deltaw[i]**2 for i in range(num_layers - 1)]
+            v_b = [beta*v_b[i] + (1-beta2)*deltab[i]**2 for i in range(num_layers - 1)]
+            
+            m_w = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
+            m_b = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
+            v_w = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            v_b = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            weights = [weights[i] - learning_rate*m_w[i]/np.sqrt(v_w[i]+eps) for i in range(len(weights))] 
+            biases = [biases[i] - learning_rate*m_b[i]/np.sqrt(v_b[i]+eps) for i in range(len(biases))]
+
+        return weights, biases
+    
+
+    def nadam(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases)
+        eps, beta1, beta2 = 1e-8, 0.9, 0.99
+        m_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        m_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+        v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+        v_b = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]        
+
+        for epoch in range(epochs):
+            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
+            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            winter = [weights[i] - gamma*prev_v_w[i] for l in range(0, len(layers)-1)]  
+            binter = [biases[i] - gamma*prev_v_b[i] for l in range(0, len(layers)-1)]
+            for i in range(length_dataset):
+                Y,H,A = forwardPropagate(X_train[i,:].reshape(784,1), winter, binter, activation) 
+                grad_weights, grad_biases = backpropagate(Y,H,A,Y_train[:,i].reshape(10,1), der_activation)
+                deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
+                deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
+
+            m_w = [beta*m_w[i] + (1-beta1)*deltaw[i] for i in range(num_layers - 1)]
+            m_b = [beta*m_b[i] + (1-beta1)*deltab[i] for i in range(num_layers - 1)]
+            v_w = [beta*v_w[i] + (1-beta2)*deltaw[i]**2 for i in range(num_layers - 1)]
+            v_b = [beta*v_b[i] + (1-beta2)*deltab[i]**2 for i in range(num_layers - 1)]
+            
+            m_w = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
+            m_b = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
+            v_w = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            v_b = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            weights = [weights[i] - learning_rate*m_w[i]/np.sqrt(v_w[i]+eps) for i in range(len(weights))] 
+            biases = [biases[i] - learning_rate*m_b[i]/np.sqrt(v_b[i]+eps) for i in range(len(biases))]
+
+        return weights, biases
             

@@ -17,15 +17,15 @@ def reLu(z):
     return np.max(z,0)
     
 
-def softmax(Z,index):
-    return np.exp(Z[index])/np.sum(np.exp(Z))
+def softmax(Z):
+    return np.exp(Z)/np.sum(np.exp(Z))
     
     
 def der_sigmoid(z):
     return sigmoid(z)(1- sigmoid(z))
     
 def der_tanh(z):
-    return (1 - tanh(z))**2
+    return (1 - np.tanh(z))**2
 
 
 def der_reLU(z):

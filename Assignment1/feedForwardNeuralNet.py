@@ -194,9 +194,8 @@ class FeedForwardNeuralNetwork():
             loss.append(np.sum(CE))
         return self.weights, self.biases, loss, Y_pred
 
-
-'''  
-    def momentumGradientDescent(self, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases):
+ 
+    def momentumGradientDescent(self, epochs,length_dataset, batch_size, learning_rate):
         gamma = 0.9
 
         loss = []
@@ -204,29 +203,38 @@ class FeedForwardNeuralNetwork():
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
         for epoch in range(epochs):
-            deltaw = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]
-            deltab = [np.zeros((layers[l+1], 1)) for l in range(0, len(layers)-1)]
+            CE = []
+            Y_pred = []
+            deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+            deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
             num_points_seen = 0
             for i in range(length_dataset):
-                Y,H,A = self.forwardPropagate(X_train[i,:].reshape(784,1), weights, biases, self.activation) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,Y_train[:,i].reshape(10,1), self.der_activation)
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases, self.activation) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
+
+                Y_pred.append(Y.reshape(10,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y))
             
-            v_w = [gamma*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
-            v_b = [gamma*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
+            v_w = [gamma*prev_v_w[i] + learning_rate*deltaw[i]/length_dataset for i in range(num_layers - 1)]
+            v_b = [gamma*prev_v_b[i] + learning_rate*deltab[i]/length_dataset for i in range(num_layers - 1)]
             
-            weights = [weights[i] - v_w[i] for i in range(len(weights))] 
-            biases = [biases[i] - v_b[i] for i in range(len(biases))]
+            self.weights = [self.weights[i] - v_w[i] for i in range(len(self.weights))] 
+            self.biases = [self.biases[i] - v_b[i] for i in range(len(self.biases))]
             prev_v_w = v_w
             prev_v_b = v_b
-        return weights, biases
+
+            print(learning_rate, epoch, np.sum(CE))
+            Y_pred = np.array(Y_pred).transpose()
+            loss.append(np.sum(CE))
+        return self.weights, self.biases, loss, Y_pred
 
 
 
 
-
+'''
     def stochasticMomentumGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases):
         gamma = 0.9
         prev_v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]

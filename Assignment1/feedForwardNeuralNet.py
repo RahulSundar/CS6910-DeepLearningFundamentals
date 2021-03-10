@@ -226,7 +226,7 @@ class FeedForwardNeuralNetwork():
 
 
 
-'''
+
     def stochasticMomentumGradientDescent(X_train,Y_train, epochs,length_dataset, batch_size, learning_rate, num_layers, layers, weights, biases):
         gamma = 0.9
         prev_v_w = [np.zeros((layers[l+1], layers[l])) for l in range(0, len(layers)-1)]

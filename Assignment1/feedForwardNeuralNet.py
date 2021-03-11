@@ -49,8 +49,21 @@ class FeedForwardNeuralNetwork():
         
     def crossEntropyLoss(self, expected, predicted):
         CE = [-expected[i]*np.log(predicted[i]) for i in range(len(predicted)) ]
-        crossEntropy = np.sum(CE)
+        crossEntropy = np.mean(CE)
         return crossEntropy
+
+    def accuracy(self, Y_train, Y_pred, data_size): 
+        Y_true_label = [] 
+        Y_pred_label = [] 
+        ctr = 0 
+        for i in range(data_size): 
+           Y_true_label.append(np.argmax(Y_train[:,i])) 
+           Y_pred_label.append(np.argmax(Y_pred[:,i])) 
+           if Y_true_label[i] == Y_pred_label[i]: 
+               ctr +=1 
+        accuracy = ctr/data_size 
+        return accuracy, Y_true_label, Y_pred_label
+
 
     def Xavier_initialiser(self, size):
         in_dim = size[1]
@@ -112,12 +125,16 @@ class FeedForwardNeuralNetwork():
 
         
     #Back prop trial code. Lot of cleanup to be done. May be a dictionary/ simple list of arrays should work.     
-    def backPropagate(self, Y,H,A, Y_train_batch, der_activation):
+    def backPropagate(self, Y,H,A, Y_train_batch, der_activation, loss_function = "CrossEntropy"):
      
         gradients_weights = [] 
         gradients_biases = [] 
         num_layers = len(self.layers) 
-        globals()["grad_a"+str(len(self.layers)-1)] = -(Y_train_batch - Y)
+        
+        if loss_function == "CrossEntropy":
+            globals()["grad_a"+str(len(self.layers)-1)] = -(Y_train_batch - Y)
+        elif loss_function == "MeanSquaredError":
+            globals()["grad_a"+str(len(self.layers)-1)] = ( Y - Y_train_batch)
         for l in range(num_layers - 2, -1,-1): 
              globals()["grad_W"+str(l+1)] = np.outer(globals()["grad_a"+str(l+1)], H[l]) 
              globals()["grad_b"+str(l+1)] = globals()["grad_a"+str(l+1)] 
@@ -139,12 +156,13 @@ class FeedForwardNeuralNetwork():
     def batchGradientDescent(self, epochs,length_dataset, batch_size, learning_rate):
         loss = []
         num_layers = len(self.layers)
+        num_points_seen = 0
         for epoch in range(epochs):
             CE = []
             Y_pred = []
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
-            num_points_seen = 0
+
             for i in range(length_dataset):
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
@@ -161,9 +179,9 @@ class FeedForwardNeuralNetwork():
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
             #weights, biases = self.weights, self.biases
         return self.weights, self.biases, loss, Y_pred
                              
@@ -189,9 +207,9 @@ class FeedForwardNeuralNetwork():
                 self.weights = [self.weights[i] -learning_rate*deltaw[i] for i in range(len(self.weights))] 
                 self.biases = [self.biases[i] - learning_rate*deltab[i] for i in range(len(self.biases))]
             
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
 
         return self.weights, self.biases, loss, Y_pred
                               
@@ -216,9 +234,9 @@ class FeedForwardNeuralNetwork():
             self.weights = [self.weights[i] - learning_rate*deltaw[i]/length_dataset for i in range(len(self.weights))] 
             self.biases = [self.biases[i] - learning_rate*deltab[i]/length_dataset for i in range(len(self.biases))]
             
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         return self.weights, self.biases, loss, Y_pred
 
  
@@ -253,9 +271,9 @@ class FeedForwardNeuralNetwork():
             prev_v_w = v_w
             prev_v_b = v_b
 
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         return self.weights, self.biases, loss, Y_pred
 
 
@@ -266,13 +284,14 @@ class FeedForwardNeuralNetwork():
         num_layers = len(self.layers)
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        num_points_seen = 0
         for epoch in range(epochs):
             CE = []
             Y_pred = []
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
-            num_points_seen = 0
+
             for i in range(length_dataset):
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
@@ -298,9 +317,9 @@ class FeedForwardNeuralNetwork():
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         return self.weights, self.biases, loss, Y_pred
 
 
@@ -340,10 +359,10 @@ class FeedForwardNeuralNetwork():
                 prev_v_w = v_w
                 prev_v_b = v_b
         
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
 
@@ -357,15 +376,19 @@ class FeedForwardNeuralNetwork():
         num_layers = len(self.layers)
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        num_points_seen = 0
         for epoch in range(epochs):
             CE = []
             Y_pred = []  
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
-            winter = [self.weights[i] - gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
-            binter = [self.biases[i] - gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
-            num_points_seen = 0
+            v_w = [gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
+            v_b = [gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
+
             for i in range(length_dataset):
+                winter = [self.weights[i] - v_w[i] for i in range(0, len(self.layers)-1)]  
+                binter = [self.biases[i] - v_b[i] for i in range(0, len(self.layers)-1)]
+
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), winter, binter, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
@@ -382,10 +405,10 @@ class FeedForwardNeuralNetwork():
             prev_v_w = v_w
             prev_v_b = v_b
     
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
     
@@ -402,10 +425,13 @@ class FeedForwardNeuralNetwork():
             Y_pred = []  
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
-            winter = [self.weights[i] - gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
-            binter = [self.biases[i] - gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
-            
+            v_w = [gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
+            v_b = [gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
+                        
             for i in range(length_dataset):
+                winter = [self.weights[i] - v_w[i] for i in range(0, len(self.layers)-1)]  
+                binter = [self.biases[i] - v_b[i] for i in range(0, len(self.layers)-1)]
+
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), winter, binter, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
                 deltaw = [grad_weights[num_layers-2 - i] for i in range(num_layers - 1)]
@@ -422,10 +448,10 @@ class FeedForwardNeuralNetwork():
                 prev_v_w = v_w
                 prev_v_b = v_b
     
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
     
@@ -437,15 +463,19 @@ class FeedForwardNeuralNetwork():
         num_layers = len(self.layers)
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        num_points_seen = 0
         for epoch in range(epochs):
             CE = []
             Y_pred = []  
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
-            winter = [self.weights[i] - gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
-            binter = [self.biases[i] - gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
-            num_points_seen = 0
+            v_w = [gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
+            v_b = [gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
+
             for i in range(length_dataset):
+                winter = [self.weights[i] - v_w[i] for i in range(0, len(self.layers)-1)]  
+                binter = [self.biases[i] - v_b[i] for i in range(0, len(self.layers)-1)]
+
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), winter, binter, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
@@ -470,10 +500,10 @@ class FeedForwardNeuralNetwork():
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
     
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
     
@@ -514,10 +544,10 @@ class FeedForwardNeuralNetwork():
             self.weights = [self.weights[i] - deltaw[i]*(learning_rate/np.sqrt(v_w[i]+eps)) for i in range(len(self.weights))] 
             self.biases = [self.biases[i] - deltab[i]*(learning_rate/np.sqrt(v_b[i]+eps)) for i in range(len(self.biases))]
     
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
     
@@ -529,14 +559,14 @@ class FeedForwardNeuralNetwork():
         
         v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
-        
+        num_points_seen = 0        
         for epoch in range(epochs):
             CE = []
             Y_pred = []
                         
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
-            num_points_seen = 0
+
             for i in range(length_dataset):
             
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases, self.activation) 
@@ -560,10 +590,10 @@ class FeedForwardNeuralNetwork():
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
     
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred  
 
@@ -578,6 +608,11 @@ class FeedForwardNeuralNetwork():
         v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]        
 
+        m_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        m_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        v_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        v_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)] 
+        
         for epoch in range(epochs):
 
             CE = []
@@ -602,18 +637,18 @@ class FeedForwardNeuralNetwork():
             v_w = [beta2*v_w[i] + (1-beta2)*deltaw[i]**2 for i in range(num_layers - 1)]
             v_b = [beta2*v_b[i] + (1-beta2)*deltab[i]**2 for i in range(num_layers - 1)]
             
-            m_w = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
-            m_b = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
-            v_w = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
-            v_b = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            m_w_hat = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
+            m_b_hat = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
+            v_w_hat = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            v_b_hat = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
             
-            self.weights = [self.weights[i] - learning_rate*m_w[i]/np.sqrt(v_w[i]+eps) for i in range(len(self.weights))] 
-            self.biases = [self.biases[i] - learning_rate*m_b[i]/np.sqrt(v_b[i]+eps) for i in range(len(self.biases))]
+            self.weights = [self.weights[i] - learning_rate*m_w_hat[i]/np.sqrt(v_w_hat[i]+eps) for i in range(len(self.weights))] 
+            self.biases = [self.biases[i] - learning_rate*m_b_hat[i]/np.sqrt(v_b_hat[i]+eps) for i in range(len(self.biases))]
 
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
   
@@ -628,8 +663,11 @@ class FeedForwardNeuralNetwork():
         m_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
         v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]        
-
-
+        m_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        m_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        v_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        v_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]   
+        num_points_seen = 0 
         for epoch in range(epochs):
 
             CE = []
@@ -638,7 +676,7 @@ class FeedForwardNeuralNetwork():
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
-            num_points_seen = 0            
+           
             for i in range(length_dataset):
                 Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
@@ -657,20 +695,20 @@ class FeedForwardNeuralNetwork():
                     v_w = [beta2*v_w[i] + (1-beta2)*deltaw[i]**2 for i in range(num_layers - 1)]
                     v_b = [beta2*v_b[i] + (1-beta2)*deltab[i]**2 for i in range(num_layers - 1)]
                     
-                    m_w = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
-                    m_b = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
-                    v_w = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
-                    v_b = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
-                    self.weights = [self.weights[i] - learning_rate*m_w[i]/np.sqrt(v_w[i]+eps) for i in range(len(self.weights))] 
-                    self.biases = [self.biases[i] - learning_rate*m_b[i]/np.sqrt(v_b[i]+eps) for i in range(len(self.biases))]
+                    m_w_hat = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
+                    m_b_hat = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
+                    v_w_hat = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+                    v_b_hat = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+                    self.weights = [self.weights[i] - (learning_rate/np.sqrt(v_w[i]+eps))*m_w_hat[i] for i in range(len(self.weights))] 
+                    self.biases = [self.biases[i] - (learning_rate/np.sqrt(v_b[i]+eps))*m_b_hat[i] for i in range(len(self.biases))]
 
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
-            print(learning_rate, epoch, np.sum(CE))
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
 
@@ -687,8 +725,13 @@ class FeedForwardNeuralNetwork():
         v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]        
 
-        prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
-        prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        m_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        m_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+        v_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        v_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)] 
+
+        prev_m_w_hat = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+        prev_m_b_hat = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
         for epoch in range(epochs):
 
@@ -698,12 +741,15 @@ class FeedForwardNeuralNetwork():
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
-            winter = [self.weights[i] - gamma*prev_v_w[i] for i in range(0, len(self.layers)-1)]  
-            binter = [self.biases[i] - gamma*prev_v_b[i] for i in range(0, len(self.layers)-1)]
+            m_w_hat = [beta1*prev_m_w_hat[i] for i in range(0, len(self.layers)-1)]  
+            m_b_hat = [beta1*prev_m_b_hat[i] for i in range(0, len(self.layers)-1)]
 
             for i in range(length_dataset):
 
-                Y,H,A = self.forwardPropagate(self.X_train[i,:].reshape(784,1), winter, binter, self.activation) 
+                winter = [self.weights[i] - m_w_hat[i] for i in range(0, len(self.layers)-1)]  
+                binter = [self.biases[i] - m_b_hat[i] for i in range(0, len(self.layers)-1)]
+                
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), winter, binter, self.activation) 
                 grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1), self.der_activation)
 
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
@@ -712,29 +758,31 @@ class FeedForwardNeuralNetwork():
                 Y_pred.append(Y.reshape(10,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y))   
 
-            m_w = [beta*m_w[i] + (1-beta1)*deltaw[i] for i in range(num_layers - 1)]
-            m_b = [beta*m_b[i] + (1-beta1)*deltab[i] for i in range(num_layers - 1)]
-            v_w = [beta*v_w[i] + (1-beta2)*deltaw[i]**2 for i in range(num_layers - 1)]
-            v_b = [beta*v_b[i] + (1-beta2)*deltab[i]**2 for i in range(num_layers - 1)]
+            m_w = [beta1*m_w[i] + (1-beta1)*deltaw[i] for i in range(num_layers - 1)]
+            m_b = [beta1*m_b[i] + (1-beta1)*deltab[i] for i in range(num_layers - 1)]
+            v_w = [beta2*v_w[i] + (1-beta2)*deltaw[i]**2 for i in range(num_layers - 1)]
+            v_b = [beta2*v_b[i] + (1-beta2)*deltab[i]**2 for i in range(num_layers - 1)]
             
-            m_w = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
-            m_b = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
-            v_w = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
-            v_b = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            m_w_hat = [m_w[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]
+            m_b_hat = [m_b[i]/(1-beta1**(epoch+1)) for i in range(num_layers - 1)]            
+            v_w_hat = [v_w[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
+            v_b_hat = [v_b[i]/(1-beta2**(epoch+1)) for i in range(num_layers - 1)]
 
             
-            self.weights = [self.weights[i] - learning_rate*m_w[i]/np.sqrt(v_w[i]+eps) for i in range(len(self.weights))] 
-            self.biases = [self.biases[i] - learning_rate*m_b[i]/np.sqrt(v_b[i]+eps) for i in range(len(self.biases))]
+            self.weights = [self.weights[i] - (learning_rate/np.sqrt(v_w_hat[i]+eps))*m_w_hat[i] for i in range(len(self.weights))] 
+            self.biases = [self.biases[i] - (learning_rate/np.sqrt(v_b_hat[i]+eps))*m_b_hat[i] for i in range(len(self.biases))]
 
-            print(learning_rate, epoch, np.sum(CE))
+            prev_m_w_hat = m_w_hat
+            prev_m_b_hat = m_b_hat
+          
+            print(learning_rate, epoch, np.mean(CE))
         
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.sum(CE))
+            loss.append(np.mean(CE))
         
         return self.weights, self.biases, loss, Y_pred
     
-    
-    
+
     
     
     

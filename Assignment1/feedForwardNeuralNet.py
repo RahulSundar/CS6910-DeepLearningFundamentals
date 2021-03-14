@@ -1,24 +1,54 @@
 import numpy as np
 import scipy as sp
 import wandb
+import time
 
-# from dataPreprocessing import *
-# from utility.optimiser import Optimiser
-# from utility.lossFunction import *
 from utility.activation import *
-
-# from utility.gradientCalculations import *
 
 
 class FeedForwardNeuralNetwork:
     def __init__(
-        self, num_hidden_layers, num_hidden_neurons, X_train_raw, Y_train_raw,  N_train, X_test_raw, Y_test_raw, N_test, X_val_raw, Y_val_raw, N_val
+        self, 
+        num_hidden_layers, 
+        num_hidden_neurons, 
+        X_train_raw, 
+        Y_train_raw,  
+        N_train, 
+        X_val_raw, 
+        Y_val_raw, 
+        N_val,
+        X_test_raw, 
+        Y_test_raw, 
+        N_test,        
+        optimizer,
+        batch_size,
+        weight_decay,
+        learning_rate,
+        max_epochs,
+        activation,
+        initializer,
+        loss
+
     ):
 
         """
-        Here, we initialise the FeedForwardNeuralNetwork class with the number of hidden layers, number of hidden neurons, raw training data. 
+        Here, we initialize the FeedForwardNeuralNetwork class with the number of hidden layers, number of hidden neurons, raw training data. 
         """
         self.data_size = Y_train_raw.shape[0]  # [NTRAIN]
+
+        self.num_hidden_layers = num_hidden_layers
+        self.num_hidden_neurons = num_hidden_neurons
+        self.output_layer_size = self.num_classes
+        self.img_height = X_train_raw.shape[1]
+        self.img_width = X_train_raw.shape[2]
+        self.img_flattened_size = self.img_height * self.img_width
+
+        # self.layers = layers
+        self.layers = (
+            [self.img_flattened_size]
+            + num_hidden_layers * [num_hidden_neurons]
+            + [self.output_layer_size]
+        )
 
         self.N_train = N_train
         self.N_val = N_val
@@ -32,7 +62,7 @@ class FeedForwardNeuralNetwork:
             )
         )  # [IMG_HEIGHT*IMG_WIDTH X NTRAIN]
         self.X_test = np.transpose(
-            X_train_raw.reshape(
+            X_test_raw.reshape(
                 X_test_raw.shape[0], X_test_raw.shape[1] * X_test_raw.shape[2]
             )
         )  # [IMG_HEIGHT*IMG_WIDTH X NTRAIN]
@@ -53,42 +83,47 @@ class FeedForwardNeuralNetwork:
         #self.Y_shape = self.Y_train.shape
 
 
-        self.num_hidden_layers = num_hidden_layers
-        self.num_hidden_neurons = num_hidden_neurons
-        self.output_layer_size = self.num_classes
-        self.img_height = X_train_raw.shape[1]
-        self.img_width = X_train_raw.shape[2]
-        self.img_flattened_size = self.img_height * self.img_width
 
-        # self.layers = layers
-        self.layers = (
-            [self.img_flattened_size]
-            + num_hidden_layers * [num_hidden_neurons]
-            + [self.output_layer_size]
-        )
 
-        # self.weights, self.biases = self.initialiseNeuralNet(self.layers)
+        # self.weights, self.biases = self.initializeNeuralNet(self.layers)
 
-        self.weights, self.biases = self.initialiseNeuralNet(self.layers)
 
-        self.Activations_dict = {"Sigmoid": sigmoid, "Tanh": tanh, "ReLU": relu}
+
+        self.Activations_dict = {"SIGMOID": sigmoid, "TANH": tanh, "RELU": relu}
         self.DerActivation_dict = {
-            "Sigmoid": der_sigmoid,
-            "Tanh": der_tanh,
-            "ReLU": der_relu,
+            "SIGMOID": der_sigmoid,
+            "TANH": der_tanh,
+            "RELU": der_relu,
+        }
+
+        self.Initializer_dict = {
+            "XAVIER": self.Xavier_initializer,
+            "RANDOM": self.random_initializer
         }
 
         self.Optimizer_dict = {
-            "SGD": self.sgd,
+            "SGD": self.sgdMiniBatch,
             "MGD": self.mgd,
             "NAG": self.nag,
             "RMSPROP": self.rmsProp,
             "ADAM": self.adam,
             "NADAM": self.nadam,
         }
-        self.activation = np.tanh
-        self.der_activation = der_tanh
+        
+        self.activation = self.Activations_dict[activation]
+        self.der_activation = self.DerActivation_dict[activation]
+        self.optimizer = self.Optimizer_dict[optimizer]
+        self.initializer = self.Initializer_dict[initializer]
+        self.loss_function = loss
+        self.max_epochs = max_epochs
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        
+        self.weights, self.biases = self.initializeNeuralNet(self.layers)
 
+
+        
+        
     # helper functions
     def oneHotEncode(self, Y_train_raw):
         Ydata = np.zeros((self.num_classes, Y_train_raw.shape[0]))
@@ -116,6 +151,7 @@ class FeedForwardNeuralNetwork:
             ]
         )
 
+
     def accuracy(self, Y_true, Y_pred, data_size):
         Y_true_label = []
         Y_pred_label = []
@@ -128,23 +164,23 @@ class FeedForwardNeuralNetwork:
         accuracy = ctr / data_size
         return accuracy, Y_true_label, Y_pred_label
 
-    def Xavier_initialiser(self, size):
+    def Xavier_initializer(self, size):
         in_dim = size[1]
         out_dim = size[0]
         xavier_stddev = np.sqrt(2 / (in_dim + out_dim))
         return np.random.normal(0, xavier_stddev, size=(out_dim, in_dim))
 
-    def random_initialiser(self, size):
+    def random_initializer(self, size):
         in_dim = size[1]
         out_dim = size[0]
         return np.random.normal(0, 1, size=(out_dim, in_dim)) / np.sqrt(2 / (in_dim))
 
-    def initialiseNeuralNet(self, layers):
+    def initializeNeuralNet(self, layers):
         weights = {}
         biases = {}
         num_layers = len(layers)
         for l in range(0, num_layers - 1):
-            W = self.Xavier_initialiser(size=[layers[l + 1], layers[l]])
+            W = self.initializer(size=[layers[l + 1], layers[l]])
             b = np.zeros((layers[l + 1], 1))
             weights[str(l + 1)] = W
             biases[str(l + 1)] = b
@@ -189,7 +225,7 @@ class FeedForwardNeuralNetwork:
         return Y, H, A
 
     def backPropagate(
-        self, Y, H, A, Y_train_batch, loss_function="CROSS", weight_decay=0
+        self, Y, H, A, Y_train_batch, weight_decay=0
     ):
 
         ALPHA = weight_decay
@@ -198,9 +234,9 @@ class FeedForwardNeuralNetwork:
         num_layers = len(self.layers)
 
         # Gradient with respect to the output layer is absolutely fine.
-        if loss_function == "CROSS":
+        if self.loss_function == "CROSS":
             globals()["grad_a" + str(num_layers - 1)] = -(Y_train_batch - Y)
-        elif loss_function == "MSE":
+        elif self.loss_function == "MSE":
             globals()["grad_a" + str(num_layers - 1)] = np.multiply(
                 2 * (Y - Y_train_batch), np.multiply(Y, (1 - Y))
             )
@@ -254,21 +290,18 @@ class FeedForwardNeuralNetwork:
         return Y_pred
 
     def sgd(self, epochs, length_dataset, learning_rate, weight_decay=0):
-        loss = []
+        
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        
         num_layers = len(self.layers)
-        wandb.init(project="Test", entity="rahulsundar")
-        wandb.run.name = (
-            "hl_"
-            + str(self.num_hidden_layers)
-            + "_hu_"
-            + str(self.num_hidden_neurons)
-            + "_act_Opt_sgd"
-        )
+
         X_train = self.X_train[:, :length_dataset]
         Y_train = self.Y_train[:, :length_dataset]
 
         for epoch in range(epochs):
-
+            start_time = time.time()
             # perm = np.random.permutation(N)
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
@@ -321,14 +354,30 @@ class FeedForwardNeuralNetwork:
                     for i in range(len(self.biases))
                 }
 
-            print(learning_rate, epoch, np.mean(CE))
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
-            wandb.log({"epoch": epoch, "loss": np.mean(CE)})
+
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+            
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch, })
         # data = [[epoch, loss[epoch]] for epoch in range(epochs)]
         # table = wandb.Table(data=data, columns = ["Epoch", "Loss"])
         # wandb.log({'loss':wandb.plot.line(table, "Epoch", "Loss", title="Loss vs Epoch Line Plot")})
-        return self.weights, self.biases, loss, Y_pred
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
 
 
       
@@ -337,13 +386,16 @@ class FeedForwardNeuralNetwork:
         X_train = self.X_train[:, :length_dataset]
         Y_train = self.Y_train[:, :length_dataset]        
 
-        loss = []
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        
         num_layers = len(self.layers)
         num_points_seen = 0
 
 
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -377,11 +429,28 @@ class FeedForwardNeuralNetwork:
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
-            print(learning_rate, epoch, np.mean(CE))
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
+
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+                    
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
             
-        return self.weights, self.biases, loss, Y_pred
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
 
 
 
@@ -391,14 +460,17 @@ class FeedForwardNeuralNetwork:
         X_train = self.X_train[:, :length_dataset]
         Y_train = self.Y_train[:, :length_dataset]        
 
-
-        loss = []
+        
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        
         num_layers = len(self.layers)
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
         num_points_seen = 0
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -410,14 +482,14 @@ class FeedForwardNeuralNetwork:
             
 
             for i in range(length_dataset):
-                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1))
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(self.img_flattened_size,1), self.weights, self.biases) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(self.num_classes,1))
                 
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(10,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y) + self.L2RegularisationLoss(weight_decay))
+                Y_pred.append(Y.reshape(self.num_classes,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
                 
                 num_points_seen +=1
                 
@@ -436,10 +508,28 @@ class FeedForwardNeuralNetwork:
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
-            print(learning_rate, epoch, np.mean(CE))
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
-        return self.weights, self.biases, loss, Y_pred
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+
+
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
 
 
  
@@ -450,15 +540,17 @@ class FeedForwardNeuralNetwork:
         X_train = self.X_train[:, :length_dataset]
         Y_train = self.Y_train[:, :length_dataset]        
 
-
-        loss = []
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        
         num_layers = len(self.layers)
         
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
         prev_v_b = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
         
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -476,14 +568,14 @@ class FeedForwardNeuralNetwork:
                 winter = {str(i+1) : self.weights[str(i+1)] - v_w[i] for i in range(0, len(self.layers)-1)}
                 binter = {str(i+1) : self.biases[str(i+1)] - v_b[i] for i in range(0, len(self.layers)-1)}
                 
-                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), winter, binter) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1))
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(self.img_flattened_size,1), winter, binter) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(self.num_classes,1))
                 
                 deltaw = [grad_weights[num_layers-2 - i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(10,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y) + self.L2RegularisationLoss(weight_decay))
+                Y_pred.append(Y.reshape(self.num_classes,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
                             
                 v_w = [GAMMA*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
                 v_b = [GAMMA*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
@@ -494,12 +586,28 @@ class FeedForwardNeuralNetwork:
                 prev_v_w = v_w
                 prev_v_b = v_b
     
-            print(learning_rate, epoch, np.mean(CE))
-        
+            
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+                    
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
-        return self.weights, self.biases, loss, Y_pred
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
     
 
     def nag(self,epochs,length_dataset, batch_size,learning_rate, weight_decay = 0):
@@ -509,7 +617,10 @@ class FeedForwardNeuralNetwork:
         Y_train = self.Y_train[:, :length_dataset]        
 
 
-        loss = []
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        
         num_layers = len(self.layers)
         
         prev_v_w = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -517,7 +628,7 @@ class FeedForwardNeuralNetwork:
         
         num_points_seen = 0
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -535,14 +646,14 @@ class FeedForwardNeuralNetwork:
                 winter = {str(i+1) : self.weights[str(i+1)] - v_w[i] for i in range(0, len(self.layers)-1)}
                 binter = {str(i+1) : self.biases[str(i+1)] - v_b[i] for i in range(0, len(self.layers)-1)}
                 
-                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), winter, binter) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1))
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(self.img_flattened_size,1), winter, binter) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(self.num_classes,1))
                 
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(10,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y) + self.L2RegularisationLoss(weight_decay))
+                Y_pred.append(Y.reshape(self.num_classes,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
 
                 num_points_seen +=1
                 
@@ -561,12 +672,28 @@ class FeedForwardNeuralNetwork:
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
     
-            print(learning_rate, epoch, np.mean(CE))
-        
+            
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
-        return self.weights, self.biases, loss, Y_pred
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
     
 
     
@@ -576,7 +703,11 @@ class FeedForwardNeuralNetwork:
         X_train = self.X_train[:, :length_dataset]
         Y_train = self.Y_train[:, :length_dataset]        
 
-        loss = []
+        
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        
         num_layers = len(self.layers)
         EPS, BETA = 1e-8, 0.9
         
@@ -585,7 +716,7 @@ class FeedForwardNeuralNetwork:
         
         num_points_seen = 0        
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -599,14 +730,14 @@ class FeedForwardNeuralNetwork:
 
             for i in range(length_dataset):
             
-                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1))
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(self.img_flattened_size,1), self.weights, self.biases) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(self.num_classes,1))
             
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
                 
-                Y_pred.append(Y.reshape(10,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y) + self.L2RegularisationLoss(weight_decay))            
+                Y_pred.append(Y.reshape(self.num_classes,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))            
                 num_points_seen +=1
                 
                 if int(num_points_seen) % batch_size == 0:
@@ -620,12 +751,28 @@ class FeedForwardNeuralNetwork:
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
     
-            print(learning_rate, epoch, np.mean(CE))
-        
+            
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+                    
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
-        return self.weights, self.biases, loss, Y_pred  
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
 
 
 
@@ -634,7 +781,9 @@ class FeedForwardNeuralNetwork:
         X_train = self.X_train[:, :length_dataset]
         Y_train = self.Y_train[:, :length_dataset]        
 
-        loss = []
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
         num_layers = len(self.layers)
         EPS, BETA1, BETA2 = 1e-8, 0.9, 0.99
         
@@ -652,7 +801,7 @@ class FeedForwardNeuralNetwork:
         
         num_points_seen = 0 
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -666,14 +815,14 @@ class FeedForwardNeuralNetwork:
             
            
             for i in range(length_dataset):
-                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1))
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(self.img_flattened_size,1), self.weights, self.biases) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(self.num_classes,1))
                 
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(10,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y) + self.L2RegularisationLoss(weight_decay))                 
+                Y_pred.append(Y.reshape(self.num_classes,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))                 
 
                 num_points_seen += 1
                 ctr = 0
@@ -698,12 +847,28 @@ class FeedForwardNeuralNetwork:
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
-            print(learning_rate, epoch, np.mean(CE))
-        
+
+            elapsed = time.time() - start_time
             Y_pred = np.array(Y_pred).transpose()
-            loss.append(np.mean(CE))
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+                    
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
-        return self.weights, self.biases, loss, Y_pred
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
 
 
     
@@ -734,8 +899,9 @@ class FeedForwardNeuralNetwork:
 
         num_points_seen = 0 
         
+        
         for epoch in range(epochs):
-
+            start_time = time.time()
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
@@ -748,14 +914,14 @@ class FeedForwardNeuralNetwork:
 
             for i in range(length_dataset):
 
-                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(784,1), self.weights, self.biases) 
-                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(10,1))
+                Y,H,A = self.forwardPropagate(self.X_train[:,i].reshape(self.img_flattened_size,1), self.weights, self.biases) 
+                grad_weights, grad_biases = self.backPropagate(Y,H,A,self.Y_train[:,i].reshape(self.num_classes,1))
 
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(10,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(10,1), Y) + self.L2RegularisationLoss(weight_decay))   
+                Y_pred.append(Y.reshape(self.num_classes,))
+                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))   
                 num_points_seen += 1
                 
                 if num_points_seen % batch_size == 0:
@@ -778,13 +944,25 @@ class FeedForwardNeuralNetwork:
                     deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
              
-            print(learning_rate, epoch, np.mean(CE))
-            
+            elapsed = time.time() - start_time
+
             Y_pred = np.array(Y_pred).transpose()
             trainingloss.append(np.mean(CE))
-            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset))
-            #validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.X_val.shape[1]), self.X_val.shape[1]))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
             
-            
-        return self.weights, self.biases, trainingloss, Y_pred  
+        return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
 

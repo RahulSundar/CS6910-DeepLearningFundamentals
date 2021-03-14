@@ -30,4 +30,4 @@ def der_tanh(z):
 
 
 def der_relu(z):
-    return np.heaviside(z,0.5) 
+    return np.heaviside(z,1) 

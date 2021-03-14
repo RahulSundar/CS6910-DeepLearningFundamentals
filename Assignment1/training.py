@@ -1,58 +1,90 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import wandb as wb
+import wandb
 
 import numpy as np
 import matplotlib.pyplot as plt
 from keras.datasets import fashion_mnist
 
 
-from feedForwardNeuralNet import FeedForwardNeuralNet
+from feedForwardNeuralNet import FeedForwardNeuralNetwork
 
 if __name__ == "__main__":
 
     # Load the data in predefined train and test split ratios:
-
+    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     (trainIn, trainOut), (testIn, testOut) = fashion_mnist.load_data()
 
-    N_train = trainOut.shape[0]
+    N_train_full = trainOut.shape[0]
+    N_train = int(0.9*N_train_full)
     N_validation = int(0.1 * trainOut.shape[0])
     N_test = testOut.shape[0]
 
-    config_defaults = dict(
-        max_epochs=5,
-        num_hidden_layers=3,
-        num_hidden_neurons=32,
-        weight_decay=0,
-        learning_rate=1e-3,
-        optimizer="SGD",
-        batch_size=16,
-        activation="TANH",
-        initializer="XAVIER",
-        loss="CROSS",
-    )
-
-    idx1 = np.random.choice(trainOut.shape[0], N_train, replace=False)
+    
+    idx  = np.random.choice(trainOut.shape[0], N_train_full, replace=False)
     idx2 = np.random.choice(testOut.shape[0], N_test, replace=False)
-    idx3 = np.random.choice(trainOut.shape[0], N_validation, replace=False)
 
-    trainIn = trainIn[idx1, :]
-    trainOut = trainOut[idx1, :]
-    testIn = trainIn[idx2, :]
-    testOut = trainOut[idx2, :]
-    validIn = trainIn[idx2, :]
-    validOut = trainOut[idx2, :]
+    trainInFull = trainIn[idx, :]
+    trainOutFull = trainOut[idx]
+    
+    trainIn = trainInFull[:N_train,:]
+    trainOut = trainOutFull[:N_train]
+    
+    validIn = trainInFull[N_train:, :]
+    validOut = trainOutFull[N_train:]    
+    
+    testIn = testIn[idx2, :]
+    testOut = testOut[idx2]
+
+    config_defaults = dict(
+            max_epochs=5,
+            num_hidden_layers=3,
+            num_hidden_neurons=32,
+            weight_decay=0,
+            learning_rate=1e-3,
+            optimizer="ADAM",
+            batch_size=16,
+            activation="TANH",
+            initializer="XAVIER",
+            loss="CROSS",
+        )
+        
+
+    #wandb.init(project='deeplearningfundamentals-cs6910', entity='rahulsundar', config = config_defaults)
+    wandb.init(project='Test', entity='rahulsundar', config = config_defaults)
+    wandb.run.name = "hl_" + str(wandb.config.num_hidden_layers) + "_hn_" + str(wandb.config.num_hidden_neurons) + "_opt_" + wandb.config.optimizer + "_act_" + wandb.config.activation + "_lr_" + str(wandb.config.learning_rate) + "_bs_"+str(wandb.config.batch_size) + "_init_" + wandb.config.initializer + "_l2_" + str(wandb.config.weight_decay) 
+    CONFIG = wandb.config
+
 
     FFNN = FeedForwardNeuralNetwork(
-        num_hidden_layers=4,
-        num_hidden_neurons=32,
+        num_hidden_layers=CONFIG.num_hidden_layers,
+        num_hidden_neurons=CONFIG.num_hidden_neurons,
         X_train_raw=trainIn,
         Y_train_raw=trainOut,
-    )
+        N_train = N_train,
+        X_val_raw = validIn,
+        Y_val_raw = validOut,
+        N_val = N_validation,
+        X_test_raw = testIn,
+        Y_test_raw = testOut,
+        N_test = N_test,
+        optimizer = CONFIG.optimizer,
+        batch_size = CONFIG.batch_size,
+        weight_decay = CONFIG.weight_decay,
+        learning_rate = CONFIG.learning_rate,
+        max_epochs = CONFIG.max_epochs,
+        activation = CONFIG.activation,
+        initializer = CONFIG.initializer,
+        loss = CONFIG.loss
+ )
 
-    weights, biases, training_loss, Y_pred_train = FFNN.train(optimizer=optimizer)
-    test_loss, Y_pred_test = FFNN.predict()
-    accuracy, true_label, predicted_label = FFNN.accuracy(FFNN.Y_train, Y_pred, N_train)
+    training_loss, trainingaccuracy, validationaccuracy, Y_pred_train = FFNN.optimizer(FFNN.max_epochs, FFNN.N_train, FFNN.batch_size, FFNN.learning_rate)
+    
+    #Y_pred_test =  FFNN.predict(FFNN.X_test, FFNN.N_test)
+    
+    #test_accuracy, Y_true_test, Y_pred_test = FFNN.accuracy(FFNN.X_test, Y_pred_test)
+    
+    #trainingaccuracy, true_label, predicted_label = FFNN.accuracy(FFNN.Y_train, Y_pred_train, N_train)
 
     """
     # Flexible integration for any Python script

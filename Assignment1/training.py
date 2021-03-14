@@ -1,5 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import wandb
 
 import numpy as np
@@ -7,7 +5,7 @@ import matplotlib.pyplot as plt
 from keras.datasets import fashion_mnist
 
 
-from feedForwardNeuralNet import FeedForwardNeuralNetwork
+#from feedForwardNeuralNet import FeedForwardNeuralNetwork
 
 #if __name__ == "__main__":
 
@@ -143,7 +141,7 @@ def train():
     
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
-    wandb.agent(sweep_id, train, count = 100)
+    wandb.agent(sweep_id, train, count = 1)
     #wandb.finish()
     
     #Y_pred_test =  FFNN.predict(FFNN.X_test, FFNN.N_test)

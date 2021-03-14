@@ -14,7 +14,7 @@ def sin(z):
 
 
 def relu(z):
-    return (z>=0)*z + (z<0)*0.001 
+    return np.maximum(0.001, z) 
 
 
 def softmax(Z):
@@ -29,4 +29,4 @@ def der_tanh(z):
     return 1 - np.tanh(z) ** 2
 
 def der_relu(z):
-    return (z>=0)*1 + (z<0)*0.001 
+    return (z>0)*1 + (z<0)*0.001 

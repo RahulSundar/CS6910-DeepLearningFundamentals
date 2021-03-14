@@ -174,12 +174,12 @@ class FeedForwardNeuralNetwork:
     def random_initializer(self, size):
         in_dim = size[1]
         out_dim = size[0]
-        return np.random.normal(0, 1, size=(out_dim, in_dim)) * np.sqrt(2 / (in_dim))
+        return np.random.normal(0, 1, size=(out_dim, in_dim))
 
 
-    def He_initializer
-        in_dim = size[0]
-        out_dim = size[1]
+    def He_initializer(self,size):
+        in_dim = size[1]
+        out_dim = size[0]
         He_stddev = np.sqrt(2 / (in_dim))
         return np.random.normal(0, 1, size=(out_dim, in_dim)) * He_stddev
 
@@ -317,7 +317,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
             CE = []
-            Y_pred = []
+            #Y_pred = []
             deltaw = [
                 np.zeros((self.layers[l + 1], self.layers[l]))
                 for l in range(0, len(self.layers) - 1)
@@ -344,7 +344,7 @@ class FeedForwardNeuralNetwork:
                     grad_biases[num_layers - 2 - i] for i in range(num_layers - 1)
                 ]
 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
 
                 CE.append(
                     self.crossEntropyLoss(
@@ -364,8 +364,8 @@ class FeedForwardNeuralNetwork:
                 }
 
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
-
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -410,7 +410,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
             
             CE = []
-            Y_pred = []
+            #Y_pred = []
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
@@ -423,7 +423,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
                 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
                 
                 num_points_seen +=1
@@ -439,8 +439,8 @@ class FeedForwardNeuralNetwork:
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
-
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -485,7 +485,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
             CE = []
-            Y_pred = []
+            #Y_pred = []
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
@@ -497,7 +497,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
                 
                 num_points_seen +=1
@@ -518,7 +518,8 @@ class FeedForwardNeuralNetwork:
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
 
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -565,7 +566,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
             CE = []
-            Y_pred = []  
+            #Y_pred = []  
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
@@ -583,7 +584,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
                             
                 v_w = [GAMMA*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
@@ -597,7 +598,8 @@ class FeedForwardNeuralNetwork:
     
             
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -643,7 +645,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
             CE = []
-            Y_pred = []  
+            #Y_pred = []  
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
@@ -661,7 +663,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
 
                 num_points_seen +=1
@@ -683,7 +685,8 @@ class FeedForwardNeuralNetwork:
     
             
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -732,7 +735,7 @@ class FeedForwardNeuralNetwork:
 
 
             CE = []
-            Y_pred = []
+            #Y_pred = []
                         
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
@@ -745,7 +748,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
                 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))            
                 num_points_seen +=1
                 
@@ -762,7 +765,8 @@ class FeedForwardNeuralNetwork:
     
             
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -817,7 +821,7 @@ class FeedForwardNeuralNetwork:
 
 
             CE = []
-            Y_pred = []
+            #Y_pred = []
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
@@ -830,7 +834,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))                 
 
                 num_points_seen += 1
@@ -858,7 +862,8 @@ class FeedForwardNeuralNetwork:
 
 
             elapsed = time.time() - start_time
-            Y_pred = np.array(Y_pred).transpose()
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
@@ -916,7 +921,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
             CE = []
-            Y_pred = []
+            #Y_pred = []
 
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
@@ -929,7 +934,7 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                Y_pred.append(Y.reshape(self.num_classes,))
+                #Y_pred.append(Y.reshape(self.num_classes,))
                 CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))   
                 num_points_seen += 1
                 
@@ -955,7 +960,8 @@ class FeedForwardNeuralNetwork:
              
             elapsed = time.time() - start_time
 
-            Y_pred = np.array(Y_pred).transpose()
+            #Y_pred = np.array(Y_pred).transpose()
+            Y_pred = self.predict(self.X_train, self.N_train)
             trainingloss.append(np.mean(CE))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])

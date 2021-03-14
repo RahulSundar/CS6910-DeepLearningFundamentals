@@ -31,9 +31,6 @@ class FeedForwardNeuralNetwork:
 
     ):
 
-        """
-        Here, we initialize the FeedForwardNeuralNetwork class with the number of hidden layers, number of hidden neurons, raw training data. 
-        """
         
         self.num_classes = np.max(Y_train_raw) + 1  # NUM_CLASSES
         self.num_hidden_layers = num_hidden_layers
@@ -80,13 +77,6 @@ class FeedForwardNeuralNetwork:
         self.Y_train = self.oneHotEncode(Y_train_raw)  # [NUM_CLASSES X NTRAIN]
         self.Y_val = self.oneHotEncode(Y_val_raw)
         self.Y_test = self.oneHotEncode(Y_test_raw)
-        #self.Y_shape = self.Y_train.shape
-
-
-
-
-        # self.weights, self.biases = self.initializeNeuralNet(self.layers)
-
 
 
         self.Activations_dict = {"SIGMOID": sigmoid, "TANH": tanh, "RELU": relu}
@@ -199,7 +189,7 @@ class FeedForwardNeuralNetwork:
         """
         Returns the neural network given input data, weights, biases.
         Arguments:
-                 : X - input matrix
+                 : X_train_batch - input matrix
                  : Weights  - Weights matrix
                  : biases - Bias vectors 
         """
@@ -298,6 +288,7 @@ class FeedForwardNeuralNetwork:
         Y_pred = np.array(Y_pred).transpose()
         return Y_pred
 
+    #Optimisers defined here onwards
     def sgd(self, epochs, length_dataset, learning_rate, weight_decay=0):
         
         trainingloss = []
@@ -980,4 +971,60 @@ class FeedForwardNeuralNetwork:
             wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
             
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
+        
 
+    #New optimiser template
+    def new_optimiser_template(self,epochs,length_dataset, batch_size, learning_rate, weight_decay = 0 ):
+        
+        X_train = self.X_train[:, :length_dataset]
+        Y_train = self.Y_train[:, :length_dataset]        
+
+        
+        trainingloss = []
+        trainingaccuracy = []
+        validationaccuracy = []
+        num_layers = len(self.layers)
+        
+        #Optimiser hyper parameters here:
+        #--------------------------------#
+        for epoch in range(epochs):
+            start_time = time.time()
+            idx = np.random.shuffle(np.arange(length_dataset))
+            X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
+            Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
+
+            CE = []
+
+
+            deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
+            deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
+
+        
+            #make changes wherever necessary
+        
+            #weights and biases update
+            #-------------------------#
+        
+            elapsed = time.time() - start_time
+
+
+            Y_pred = self.predict(self.X_train, self.N_train)
+            trainingloss.append(np.mean(CE))
+            trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
+            validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
+
+            print(
+                        "Epoch: %d, Loss: %.3e, Training accuracy:%.2f, Validation Accuracy: %.2f, Time: %.2f, Learning Rate: %.3e"
+                        % (
+                            epoch,
+                            trainingloss[epoch],
+                            trainingaccuracy[epoch],
+                            validationaccuracy[epoch],
+                            elapsed,
+                            self.learning_rate,
+                        )
+                    )
+            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+         
+        #return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
+        pass

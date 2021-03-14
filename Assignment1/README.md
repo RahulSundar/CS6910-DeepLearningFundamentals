@@ -1,4 +1,4 @@
-#Fashion MNIST classification using a "numpy" Bare Bones Feed forward Neural Network
+# **Fashion MNIST classification using a "numpy" Bare Bones Feed forward Neural Network**
 
 This folder contains the code base for Assignment 1 as part of CS6910: Deep Learning Fundamentals course at IIT Madras during the Spring of 2021.
 

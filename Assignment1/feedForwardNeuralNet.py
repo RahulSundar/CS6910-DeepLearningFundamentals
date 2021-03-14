@@ -34,8 +34,8 @@ class FeedForwardNeuralNetwork:
         """
         Here, we initialize the FeedForwardNeuralNetwork class with the number of hidden layers, number of hidden neurons, raw training data. 
         """
-        self.data_size = Y_train_raw.shape[0]  # [NTRAIN]
-
+        
+        self.num_classes = np.max(Y_train_raw) + 1  # NUM_CLASSES
         self.num_hidden_layers = num_hidden_layers
         self.num_hidden_neurons = num_hidden_neurons
         self.output_layer_size = self.num_classes
@@ -53,7 +53,7 @@ class FeedForwardNeuralNetwork:
         self.N_train = N_train
         self.N_val = N_val
         self.N_test = N_test
-        self.num_classes = np.max(Y_train_raw) + 1  # NUM_CLASSES
+        
 
 
         self.X_train = np.transpose(
@@ -98,7 +98,8 @@ class FeedForwardNeuralNetwork:
 
         self.Initializer_dict = {
             "XAVIER": self.Xavier_initializer,
-            "RANDOM": self.random_initializer
+            "RANDOM": self.random_initializer,
+            "HE": self.He_initializer
         }
 
         self.Optimizer_dict = {
@@ -173,7 +174,15 @@ class FeedForwardNeuralNetwork:
     def random_initializer(self, size):
         in_dim = size[1]
         out_dim = size[0]
-        return np.random.normal(0, 1, size=(out_dim, in_dim)) / np.sqrt(2 / (in_dim))
+        return np.random.normal(0, 1, size=(out_dim, in_dim)) * np.sqrt(2 / (in_dim))
+
+
+    def He_initializer
+        in_dim = size[0]
+        out_dim = size[1]
+        He_stddev = np.sqrt(2 / (in_dim))
+        return np.random.normal(0, 1, size=(out_dim, in_dim)) * He_stddev
+
 
     def initializeNeuralNet(self, layers):
         weights = {}

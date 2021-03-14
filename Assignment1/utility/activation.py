@@ -22,7 +22,7 @@ def softmax(Z):
 
 
 def der_sigmoid(z):
-    return sigmoid(z)(1 - sigmoid(z))
+    return sigmoid(z)*(1 - sigmoid(z))
 
 
 def der_tanh(z):

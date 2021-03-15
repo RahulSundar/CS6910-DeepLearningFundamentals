@@ -5,12 +5,8 @@ import matplotlib.pyplot as plt
 from keras.datasets import fashion_mnist
 
 
-#from feedForwardNeuralNet import FeedForwardNeuralNetwork
+from feedForwardNeuralNet import FeedForwardNeuralNetwork
 
-#if __name__ == "__main__":
-
-    # Load the data in predefined train and test split ratios:
-#    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
 (trainIn, trainOut), (testIn, testOut) = fashion_mnist.load_data()
 
 N_train_full = trainOut.shape[0]
@@ -108,9 +104,6 @@ def train():
     wandb.run.name = "hl_" + str(wandb.config.num_hidden_layers) + "_hn_" + str(wandb.config.num_hidden_neurons) + "_opt_" + wandb.config.optimizer + "_act_" + wandb.config.activation + "_lr_" + str(wandb.config.learning_rate) + "_bs_"+str(wandb.config.batch_size) + "_init_" + wandb.config.initializer + "_ep_"+ str(wandb.config.max_epochs)+ "_l2_" + str(wandb.config.weight_decay) 
     CONFIG = wandb.config
 
-
-    
-    #sweep_id = wandb.sweep(sweep_config)
   
 
     FFNN = FeedForwardNeuralNetwork(

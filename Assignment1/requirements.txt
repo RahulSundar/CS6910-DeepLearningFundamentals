@@ -1,4 +1,4 @@
 wandb==0.10.19
 numpy==1.19.5
 time
-
+tensorflow>=2.2

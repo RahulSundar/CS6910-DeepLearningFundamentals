@@ -62,7 +62,7 @@ sweep_config = {
 #sweep_id = wandb.sweep(sweep_config,project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar')
 
 config_defaults = dict(
-        max_epochs=10,
+        max_epochs=2,
         num_hidden_layers=3,
         num_hidden_neurons=64,
         weight_decay=0,
@@ -112,8 +112,8 @@ def train(config = config_defaults):
     training_loss, trainingaccuracy, validationaccuracy, Y_pred_train = FFNN.optimizer(FFNN.max_epochs, FFNN.N_train, FFNN.batch_size, FFNN.learning_rate)
     wandb.finish()
     Y_pred_test =  FFNN.predict(FFNN.X_test, FFNN.N_test)
-    train_accuracy, Y_true_train, Y_pred_train = FFNN.accuracy(FFNN.X_train, Y_pred_train, FFNN.N_train)
-    test_accuracy, Y_true_test, Y_pred_test = FFNN.accuracy(FFNN.X_test, Y_pred_test,FFNN.N_test)
+    train_accuracy, Y_true_train, Y_pred_train = FFNN.accuracy(FFNN.Y_train, Y_pred_train, FFNN.N_train)
+    test_accuracy, Y_true_test, Y_pred_test = FFNN.accuracy(FFNN.Y_test, Y_pred_test,FFNN.N_test)
     train_pred = (train_accuracy, Y_true_train, Y_pred_train)
     test_pred = (test_accuracy, Y_true_test, Y_pred_test)
 

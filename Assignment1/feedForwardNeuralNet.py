@@ -302,13 +302,14 @@ class FeedForwardNeuralNetwork:
 
         for epoch in range(epochs):
             start_time = time.time()
-            # perm = np.random.permutation(N)
+            
             idx = np.random.shuffle(np.arange(length_dataset))
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
+            
+            LOSS = []
 
-            CE = []
-            #Y_pred = []
+            
             deltaw = [
                 np.zeros((self.layers[l + 1], self.layers[l]))
                 for l in range(0, len(self.layers) - 1)
@@ -335,16 +336,22 @@ class FeedForwardNeuralNetwork:
                     grad_biases[num_layers - 2 - i] for i in range(num_layers - 1)
                 ]
 
-                #Y_pred.append(Y.reshape(self.num_classes,))
 
-                CE.append(
-                    self.crossEntropyLoss(
-                        self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
                     )
-                    + self.L2RegularisationLoss(weight_decay)
-                )
 
-                # print(num_points_seen)
+                
                 self.weights = {
                     str(i + 1): (self.weights[str(i + 1)] - learning_rate * deltaw[i])
                     for i in range(len(self.weights))
@@ -355,9 +362,10 @@ class FeedForwardNeuralNetwork:
                 }
 
             elapsed = time.time() - start_time
-            #Y_pred = np.array(Y_pred).transpose()
+            
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
             
@@ -373,7 +381,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
 
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch, })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch, })
         # data = [[epoch, loss[epoch]] for epoch in range(epochs)]
         # table = wandb.Table(data=data, columns = ["Epoch", "Loss"])
         # wandb.log({'loss':wandb.plot.line(table, "Epoch", "Loss", title="Loss vs Epoch Line Plot")})
@@ -400,7 +408,7 @@ class FeedForwardNeuralNetwork:
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
             
-            CE = []
+            LOSS = []
             #Y_pred = []
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -414,9 +422,19 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
                 
-                #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
-                
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
                 num_points_seen +=1
                 
                 if int(num_points_seen) % batch_size == 0:
@@ -430,9 +448,9 @@ class FeedForwardNeuralNetwork:
                     deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
             elapsed = time.time() - start_time
-            #Y_pred = np.array(Y_pred).transpose()
+
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -448,7 +466,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
                     
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
             
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
 
@@ -475,8 +493,8 @@ class FeedForwardNeuralNetwork:
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
-            CE = []
-            #Y_pred = []
+            LOSS = []
+
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
             deltab = [np.zeros((self.layers[l+1], 1)) for l in range(0, len(self.layers)-1)]
             
@@ -488,9 +506,19 @@ class FeedForwardNeuralNetwork:
                 deltaw = [grad_weights[num_layers-2 - i] + deltaw[i] for i in range(num_layers - 1)]
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
-                #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
-                
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
                 num_points_seen +=1
                 
                 if int(num_points_seen) % batch_size == 0:
@@ -511,7 +539,7 @@ class FeedForwardNeuralNetwork:
             elapsed = time.time() - start_time
             #Y_pred = np.array(Y_pred).transpose()
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -527,7 +555,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
 
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
 
 
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
@@ -556,7 +584,7 @@ class FeedForwardNeuralNetwork:
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
-            CE = []
+            LOSS = []
             #Y_pred = []  
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -576,8 +604,21 @@ class FeedForwardNeuralNetwork:
                 deltab = [grad_biases[num_layers-2 - i] for i in range(num_layers - 1)]
 
                 #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
-                            
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
+
+                
                 v_w = [GAMMA*prev_v_w[i] + learning_rate*deltaw[i] for i in range(num_layers - 1)]
                 v_b = [GAMMA*prev_v_b[i] + learning_rate*deltab[i] for i in range(num_layers - 1)]
         
@@ -591,7 +632,7 @@ class FeedForwardNeuralNetwork:
             elapsed = time.time() - start_time
             #Y_pred = np.array(Y_pred).transpose()
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -607,7 +648,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
                     
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
     
@@ -635,7 +676,7 @@ class FeedForwardNeuralNetwork:
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
-            CE = []
+            LOSS = []
             #Y_pred = []  
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -655,8 +696,21 @@ class FeedForwardNeuralNetwork:
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
                 #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
 
+                
                 num_points_seen +=1
                 
                 if int(num_points_seen) % batch_size == 0:                            
@@ -678,7 +732,7 @@ class FeedForwardNeuralNetwork:
             elapsed = time.time() - start_time
             #Y_pred = np.array(Y_pred).transpose()
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -694,7 +748,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
 
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
     
@@ -725,7 +779,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
 
-            CE = []
+            LOSS = []
             #Y_pred = []
                         
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -740,7 +794,20 @@ class FeedForwardNeuralNetwork:
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
                 
                 #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))            
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
+
                 num_points_seen +=1
                 
                 if int(num_points_seen) % batch_size == 0:
@@ -758,7 +825,7 @@ class FeedForwardNeuralNetwork:
             elapsed = time.time() - start_time
             #Y_pred = np.array(Y_pred).transpose()
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -774,7 +841,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
                     
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
 
@@ -811,7 +878,7 @@ class FeedForwardNeuralNetwork:
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
 
-            CE = []
+            LOSS = []
             #Y_pred = []
             
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -826,8 +893,21 @@ class FeedForwardNeuralNetwork:
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
                 #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))                 
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
 
+                
                 num_points_seen += 1
                 ctr = 0
                 if int(num_points_seen) % batch_size == 0:
@@ -855,7 +935,7 @@ class FeedForwardNeuralNetwork:
             elapsed = time.time() - start_time
             #Y_pred = np.array(Y_pred).transpose()
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -871,7 +951,7 @@ class FeedForwardNeuralNetwork:
                         )
                     )
                     
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
         
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred
 
@@ -911,7 +991,7 @@ class FeedForwardNeuralNetwork:
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
-            CE = []
+            LOSS = []
             #Y_pred = []
 
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -926,7 +1006,20 @@ class FeedForwardNeuralNetwork:
                 deltab = [grad_biases[num_layers-2 - i] + deltab[i] for i in range(num_layers - 1)]
 
                 #Y_pred.append(Y.reshape(self.num_classes,))
-                CE.append(self.crossEntropyLoss(self.Y_train[:,i].reshape(self.num_classes,1), Y) + self.L2RegularisationLoss(weight_decay))   
+                if self.loss_function == "MSE":
+                    LOSS.append(self.meanSquaredErrorLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                        )
+                elif self.loss_function == "CROSS":
+                    LOSS.append(
+                        self.crossEntropyLoss(
+                            self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                        )
+                        + self.L2RegularisationLoss(weight_decay)
+                    )
+
                 num_points_seen += 1
                 
                 if num_points_seen % batch_size == 0:
@@ -953,7 +1046,7 @@ class FeedForwardNeuralNetwork:
 
             #Y_pred = np.array(Y_pred).transpose()
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -968,7 +1061,7 @@ class FeedForwardNeuralNetwork:
                             self.learning_rate,
                         )
                     )
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
             
         return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
         
@@ -993,7 +1086,7 @@ class FeedForwardNeuralNetwork:
             X_train = X_train[:, idx].reshape(self.img_flattened_size, length_dataset)
             Y_train = Y_train[:, idx].reshape(self.num_classes, length_dataset)
 
-            CE = []
+            LOSS = []
 
 
             deltaw = [np.zeros((self.layers[l+1], self.layers[l])) for l in range(0, len(self.layers)-1)]
@@ -1004,12 +1097,27 @@ class FeedForwardNeuralNetwork:
         
             #weights and biases update
             #-------------------------#
+            if self.loss_function == "MSE":
+                LOSS.append(self.meanSquaredErrorLoss(
+                        self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                    )
+                    + self.L2RegularisationLoss(weight_decay)
+                    )
+            elif self.loss_function == "CROSS":
+                LOSS.append(
+                    self.crossEntropyLoss(
+                        self.Y_train[:, i].reshape(self.num_classes, 1), Y
+                    )
+                    + self.L2RegularisationLoss(weight_decay)
+                )
+
+            
         
             elapsed = time.time() - start_time
 
 
             Y_pred = self.predict(self.X_train, self.N_train)
-            trainingloss.append(np.mean(CE))
+            trainingloss.append(np.mean(LOSS))
             trainingaccuracy.append(self.accuracy(Y_train, Y_pred, length_dataset)[0])
             validationaccuracy.append(self.accuracy(self.Y_val, self.predict(self.X_val, self.N_val), self.N_val)[0])
 
@@ -1024,7 +1132,7 @@ class FeedForwardNeuralNetwork:
                             self.learning_rate,
                         )
                     )
-            wandb.log({'loss':np.mean(CE), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
+            wandb.log({'loss':np.mean(LOSS), 'trainingaccuracy':trainingaccuracy[epoch], 'validationaccuracy':validationaccuracy[epoch],'epoch':epoch })
          
         #return trainingloss, trainingaccuracy, validationaccuracy, Y_pred  
         pass

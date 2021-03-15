@@ -28,10 +28,10 @@ validOut = trainOutFull[N_train:]
 testIn = testIn[idx2, :]
 testOut = testOut[idx2]
 
-'''
+
 sweep_config = {
-  "name": "Random Sweep",
-  "method": "random",
+  "name": "Bayesian Sweep",
+  "method": "bayes",
   "metric":{
   "name": "validationaccuracy",
   "goal": "maximize"
@@ -44,40 +44,42 @@ sweep_config = {
   "parameters": {
         
         "activation":{
-            "values": ["TANH", "SIGMOID"]
-        },
-        
-        "optimizer": {
-            "values": ["ADAM","NADAM"]
+            "values": ["RELU", "SIGMOID"]
         },
                     
         "batch_size": {
             "values": [16, 32, 64]
+        },
+        "initializer": {
+            "values": ["XAVIER", "HE"]
         }
+        
         
         
     }
 }
-'''
-#sweep_id = wandb.sweep(sweep_config,project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar')
 
-config_defaults = dict(
-        max_epochs=2,
-        num_hidden_layers=3,
-        num_hidden_neurons=64,
-        weight_decay=0,
-        learning_rate=1e-3,
-        optimizer="ADAM",
-        batch_size=16,
-        activation="TANH",
-        initializer="XAVIER",
-        loss="CROSS",
-    )
+sweep_id = wandb.sweep(sweep_config,project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar')
 
-def train(config = config_defaults):    
 
+
+def train():    
+
+     
+    config_defaults = dict(
+            max_epochs=2,
+            num_hidden_layers=3,
+            num_hidden_neurons=128,
+            weight_decay=0,
+            learning_rate=1e-3,
+            optimizer="NADAM",
+            batch_size=16,
+            activation="SIGMOID",
+            initializer="XAVIER",
+            loss="CROSS",
+        ) 
         
-    wandb.init(project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar', config = config)
+    wandb.init(config = config_defaults)
     
 
     wandb.run.name = "MNIST_hl_" + str(wandb.config.num_hidden_layers) + "_hn_" + str(wandb.config.num_hidden_neurons) + "_opt_" + wandb.config.optimizer + "_act_" + wandb.config.activation + "_bs_"+str(wandb.config.batch_size) 
@@ -109,21 +111,24 @@ def train(config = config_defaults):
 
 
 
-    training_loss, trainingaccuracy, validationaccuracy, Y_pred_train = FFNN.optimizer(FFNN.max_epochs, FFNN.N_train, FFNN.batch_size, FFNN.learning_rate)
+    #training_loss, trainingaccuracy, validationaccuracy, Y_pred_train = FFNN.optimizer(FFNN.max_epochs, FFNN.N_train, FFNN.batch_size, FFNN.learning_rate)
+    
+    FFNN.optimizer(FFNN.max_epochs, FFNN.N_train, FFNN.batch_size, FFNN.learning_rate)
     wandb.finish()
-    Y_pred_test =  FFNN.predict(FFNN.X_test, FFNN.N_test)
-    train_accuracy, Y_true_train, Y_pred_train = FFNN.accuracy(FFNN.Y_train, Y_pred_train, FFNN.N_train)
-    test_accuracy, Y_true_test, Y_pred_test = FFNN.accuracy(FFNN.Y_test, Y_pred_test,FFNN.N_test)
-    train_pred = (train_accuracy, Y_true_train, Y_pred_train)
-    test_pred = (test_accuracy, Y_true_test, Y_pred_test)
+    #Y_pred_test =  FFNN.predict(FFNN.X_test, FFNN.N_test)
+    #train_accuracy, Y_true_train, Y_pred_train = FFNN.accuracy(FFNN.Y_train, Y_pred_train, FFNN.N_train)
+    #test_accuracy, Y_true_test, Y_pred_test = FFNN.accuracy(FFNN.Y_test, Y_pred_test, FFNN.N_test)
+    #train_pred = (train_accuracy, Y_true_train, Y_pred_train)
+    #test_pred = (test_accuracy, Y_true_test, Y_pred_test)
 
-    return train_pred, test_pred
+    #return train_pred, test_pred
     
     
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     
-
+    wandb.agent(sweep_id, train, count = 5)
+    '''
     config1 = dict(
             max_epochs=10,
             num_hidden_layers=3,
@@ -163,15 +168,15 @@ if __name__ == "__main__":
             loss="CROSS",
         )
     
-
-    config_dict = {"1":config1, "2":config2, "3":config3}
+    '''
+    #config_dict = {"1":config1, "2":config2, "3":config3}
     
 
-    Results = {}
+    #Results = {}
     
     
-    for i in range(3):
-        Results["train_pred"+str(i+1)], Results["test_pred"+str(i+1)] = train(config_dict[str(i+1)])
+    #for i in range(3):
+    #    Results["train_pred"+str(i+1)], Results["test_pred"+str(i+1)] = train(config_dict[str(i+1)])
         
         
         

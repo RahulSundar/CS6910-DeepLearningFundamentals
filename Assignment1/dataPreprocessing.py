@@ -27,6 +27,19 @@ if __name__ == "__main__":
         "8": "Bag",
         "9": "Ankle Boot",
     }
+    
+    class_labels = [
+        "T-shirt/Top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle Boot",
+    ]
     ctr = 0
 
     Image_list = []

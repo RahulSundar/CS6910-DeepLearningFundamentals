@@ -34,23 +34,98 @@ datapreprocessing.py - data set download and plotting of sample images.
 
 Assignment1_training_sweep_Fashion_MNIST.ipynb - Google colab note book to carry out training and hyperparameter search using Wandb for various hyper parameter combinations. 
 
+Assignment1_training_MSE_Loss.ipynb - Google colab notebook to carry out training for MSE loss function. This was done to run simultaneously multiple seeps and wandb runs. But otherwise a single code should suffice.
 ## Training, Validation and Hyperparameter optimisation
 
 
 ```
 python training.py
 ```
-Or if you want to run interactively, 
+Or if you want to run interactively, you could use Ipython console and later postprocess the data on the console itself. 
 
+Inorder to train and then test on the Fashion MNIST dataset:
 ```
 ipython
-> run training.py 
+In [1]: run training.py 
+In [2]: run test.py 
+```
+Inorder to train on the MNIST hand written digits:
+```
+ipython
+In [1]: run MNIST_training.py 
+``` 
+ 
+Once the training is done, you can check all the runs on the wandb dashboards corresponding to each run as the metrics are logged automatically during the runs.  
+
+
+A template optimiser is provided in feedForwardNeuralNet.py to code the gradient based optimiser of choice. 
+
+Also, the sweep configurations for wandb based Random and Bayesian hyperparameter search can be configured in the following manner(in the training/ test scripts based on the user's choice):
+
+```
+sweep_config = {
+  "name": "Random Sweep", #(or) Bayesian Sweep (or) Grid search
+  "method": "random", #(or) bayes (or) grid
+  "metric":{
+  "name": "validationaccuracy",
+  "goal": "maximize"
+  },
+  "parameters": {
+        "max_epochs": {
+            "values": [5, 10]
+        },
+
+        "initializer": {
+            "values": ["RANDOM", "XAVIER"]
+        },
+
+        "num_layers": {
+            "values": [2, 3, 4]
+        },
+        
+        
+        "num_hidden_neurons": {
+            "values": [32, 64, 128]
+        },
+        
+        "activation": {
+            "values": ['RELU', 'SIGMOID', 'TANH']
+        },
+        
+        "learning_rate": {
+            "values": [0.001, 0.0001]
+        },
+        
+        
+        "weight_decay": {
+            "values": [0, 0.0005,0.5]
+        },
+        
+        "optimizer": {
+            "values": ["SGD", "MGD", "NAG", "RMSPROP", "ADAM","NADAM"]
+        },
+                    
+        "batch_size": {
+            "values": [16, 32, 64]
+        }
+        
+        
+    }
+}
 ```
 
-Once the training is done, you can run the model on the test data. 
-## Testing
-
-## Transfer learning to MNIST hand written digits data set
+One can choose to select / modify/omit any of the hyperparameters above in the config dictionary.
 
 
+## Results:
+For the plain vanilla feed forward neural network implemented, the maximum test accuracy reported was 88.08% on the Fashion MNIST dataset and ~96.3% on the MNIST hand written datasets.
+One of the model configuration chosen to be  the best is as follows:
 
+- Number of Hidden Layers - 3
+- Number of Hidden Neurons - 128
+- L2 Regularisation - No
+- Activation - Sigmoid
+- Initialisation - Xavier
+- Optimiser - NADAM
+- Learning Rate - 0.001
+- Batch size - 32

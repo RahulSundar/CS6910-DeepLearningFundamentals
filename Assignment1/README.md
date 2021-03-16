@@ -1,6 +1,10 @@
 # **Fashion MNIST classification using a "numpy" Bare Bones Feed forward Neural Network**
 
 This folder contains the code base for Assignment 1 as part of CS6910: Deep Learning Fundamentals course at IIT Madras during the Spring of 2021.
+The wandb report can be found in the following link:
+
+https://wandb.ai/rahulsundar/CS6910-DeepLearningFundamentals-Assignment1/reports/CS6910-Assignment-1-Feed-Forward-Neural-Network-from-bare-bones-for-Fashion-MNIST-classification--Vmlldzo1Mjk2MTE
+
 
 The problem statement involves building and training a 'plain vanilla' Feed Forward Neural Network from scratch using primarily Numpy package in Python.  
 

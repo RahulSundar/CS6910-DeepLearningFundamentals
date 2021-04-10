@@ -24,6 +24,8 @@ except:
   pass
 
 
+
+
 #data pre processing
 
 data_augmentation = False
@@ -85,13 +87,12 @@ test_generator = test_datagen.flow_from_directory(
         shuffle = True,
          seed = 123)
 
-''' 
 #sweep config
 sweep_config = {
   "name": "Bayesian Sweep",
   "method": "bayes",
   "metric":{
-  "name": "validationaccuracy",
+  "name": "val_accuracy",
   "goal": "maximize"
   },
   'early_terminate': {
@@ -105,9 +106,6 @@ sweep_config = {
             "values": ["relu", "elu"]
         },
                     
-        "batch_size": {
-            "values": [32, 64]
-        },
         "optimizer": {
             "values": ["sgd", "adam", "rmsprop"]
         },
@@ -118,17 +116,19 @@ sweep_config = {
             "values": [32, 64]
         },
         "dense_neurons": {
-            "values": [32, 64]
+            "values": [64, 128]
         },
         "dropout_fraction": {
             "values": [0.2,0.3]
+        },
+        
+        "filter_distribution": {
+            "values": ['standard','half', 'double']
         },        
     }
 }
 
 sweep_id = wandb.sweep(sweep_config,project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar')
-
-'''
 
 #train function
 def train():
@@ -152,21 +152,30 @@ def train():
             batch_size = 32, 
             img_size = IMG_SIZE
         ) 
-    wandb.init(project = 'CS6910-Assignment2-CNNs', config = config_defaults,entity='rahulsundar')
+    #wandb.init(project = 'CS6910-Assignment2-CNNs', config = config_defaults,entity='rahulsundar')
+    wandb.init( config = config_defaults)
     CONFIG = wandb.config
         
 
 
     wandb.run.name = "OBJDET_" + str(CONFIG.num_hidden_cnn_layers) + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_dro_" + str(CONFIG.dropout_fraction) + "_bs_"+str(CONFIG.batch_size) + "_fd_" + CONFIG.filter_distribution
 
-
+    #def myprint(s, path = './TrainedModel/'+wandb.run.name):
+    #    with open(path+"/mymodelsummary.txt",'w+') as f:
+    #        print(s, file=f)
+            
+            
     objDetn = ObjectDetection(CONFIG.img_size, CONFIG )
-    model = objDetn.build_cnnmodel()
-    
+    #model = objDetn.build_cnnmodel()
+    model = objDetn.build_cnnmodelsimple()
+    model.summary()
+
+
+
     model.compile(
     optimizer=CONFIG.optimizer,  # Optimizer
     # Loss function to minimize
-    loss='categorical_crossentropy',
+    loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),#'categorical_crossentropy',
     # List of metrics to monitor
     metrics=['accuracy'],
     )
@@ -181,13 +190,15 @@ def train():
                     )
 
     model.save('./TrainedModel/'+wandb.run.name)
+    #model.summary(print_fn=myprint)
     wandb.finish()
-    return model, history
+    #return model, history
     
     
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     
-    Model, History = train()
+    wandb.agent(sweep_id, train, count = 100)
+    #Model, History = train()
     
 

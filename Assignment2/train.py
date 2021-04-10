@@ -80,7 +80,7 @@ validation_generator = train_datagen.flow_from_directory(
 
         
 test_generator = test_datagen.flow_from_directory(
-        './Data/inaturalist_12K/val',
+        './Data/inaturalist_12K/test',
         target_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         class_mode='categorical',

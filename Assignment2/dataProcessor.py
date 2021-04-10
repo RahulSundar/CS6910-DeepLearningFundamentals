@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import cv2
+import pathlib
 
 from  matplotlib import pyplot as plt
 import matplotlib.image as mpimg
@@ -111,20 +112,29 @@ IMG_SIZE = (256,256)
 '''
 
 
-#Alternative
+#Faster Alternative
 train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
         rescale=1./255,
         shear_range=0.2,
         zoom_range=0.2,
-        horizontal_flip=True)
+        featurewise_center=False,  # set input mean to 0 over the dataset
+        samplewise_center=False,  # set each sample mean to 0
+        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+        samplewise_std_normalization=False,  # divide each input by its std
+        zca_whitening=False,  # apply ZCA whitening
+        rotation_range=15,  # randomly rotate images in the range (degrees, 0 to 180)
+        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+        horizontal_flip=True,  # randomly flip images
+        vertical_flip=False)
 test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 train_generator = train_datagen.flow_from_directory(
         'data/inaturalist/train',
         target_size=(150, 150),
         batch_size=32,
-        class_mode='binary')
+        class_mode='categorical')
 validation_generator = test_datagen.flow_from_directory(
         'data/inaturalist/validation',
         target_size=(150, 150),
         batch_size=32,
-        class_mode='binary')
+        class_mode='categorical')

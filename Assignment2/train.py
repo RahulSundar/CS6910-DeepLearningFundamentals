@@ -112,12 +112,6 @@ sweep_config = {
         "batch_normalization": {
             "values": [True, False]
         },
-        "number_of_filters_base": {
-            "values": [32, 64]
-        },
-        "dense_neurons": {
-            "values": [64, 128]
-        },
         "dropout_fraction": {
             "values": [0.2,0.3]
         },
@@ -128,7 +122,7 @@ sweep_config = {
     }
 }
 
-sweep_id = wandb.sweep(sweep_config,project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar')
+sweep_id = wandb.sweep(sweep_config,project='CS6910-Assignment2-CNNs', entity='rahulsundar')
 
 #train function
 def train():
@@ -138,7 +132,7 @@ def train():
             num_hidden_cnn_layers = 5 ,
             activation = 'relu',
             batch_normalization = True,
-            filter_distribution = "double" ,
+            filter_distribution = "standard" ,
             filter_size = (3,3),
             number_of_filters_base  = 32,
             initializer = 'he_uniform',
@@ -150,7 +144,7 @@ def train():
             optimizer = 'adam',
             epochs = 5,
             batch_size = 32, 
-            img_size = IMG_SIZE
+            img_size = (128,128)
         ) 
     #wandb.init(project = 'CS6910-Assignment2-CNNs', config = config_defaults,entity='rahulsundar')
     wandb.init( config = config_defaults)
@@ -158,7 +152,7 @@ def train():
         
 
 
-    wandb.run.name = "OBJDET_" + str(CONFIG.num_hidden_cnn_layers) + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_dro_" + str(CONFIG.dropout_fraction) + "_bs_"+str(CONFIG.batch_size) + "_fd_" + CONFIG.filter_distribution
+    wandb.run.name = "OBJDET_CNNdrop_" + str(CONFIG.num_hidden_cnn_layers) + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_dro_" + str(CONFIG.dropout_fraction) + "_bs_"+str(CONFIG.batch_size) + "_fd_" + CONFIG.filter_distribution + "_act_" + CONFIG.activation
 
     #def myprint(s, path = './TrainedModel/'+wandb.run.name):
     #    with open(path+"/mymodelsummary.txt",'w+') as f:
@@ -166,8 +160,8 @@ def train():
             
             
     objDetn = ObjectDetection(CONFIG.img_size, CONFIG )
-    #model = objDetn.build_cnnmodel()
-    model = objDetn.build_cnnmodelsimple()
+    model = objDetn.build_cnndropmodelnoreg()
+    #model = objDetn.build_cnnmodelsimple()
     model.summary()
 
 
@@ -198,7 +192,7 @@ def train():
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     
-    wandb.agent(sweep_id, train, count = 100)
+    wandb.agent(sweep_id, train, count = 24)
     #Model, History = train()
     
 

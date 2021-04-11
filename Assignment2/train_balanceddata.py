@@ -60,7 +60,6 @@ test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 train_generator = train_datagen.flow_from_directory(
     './Data/inaturalist_12K/train2',
-    subset='training',
     target_size=IMG_SIZE,
     batch_size=BATCH_SIZE,
     class_mode='categorical',
@@ -70,7 +69,6 @@ train_generator = train_datagen.flow_from_directory(
 validation_generator = train_datagen.flow_from_directory(
         './Data/inaturalist_12K/validation',
         target_size=IMG_SIZE,
-        subset = 'validation',
         batch_size=BATCH_SIZE,
         class_mode='categorical',
         shuffle = True,

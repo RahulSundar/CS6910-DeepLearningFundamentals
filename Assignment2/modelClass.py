@@ -53,12 +53,61 @@ class ObjectDetection():
                 self.IMG_HEIGHT = IMG_SIZE[0]
                 self.IMG_WIDTH = IMG_SIZE[1]        
 
-        self.IMG_HEIGHT = IMG_SIZE[0]
-        self.IMG_WIDTH = IMG_SIZE[1]        
+        self.IMG_HEIGHT = 128#IMG_SIZE[0]
+        self.IMG_WIDTH = 128#IMG_SIZE[1]        
          
         self.input_shape = (self.IMG_HEIGHT, self.IMG_WIDTH, 3)
 
 
+    def build_cnndropmodelnoreg(self):
+        keras.backend.clear_session()
+        model = Sequential()
+        
+        #First CNN layer connecting to input layer
+        model.add(Conv2D(self.number_of_filters_base, self.filter_size,padding = self.padding, input_shape = (self.IMG_HEIGHT, self.IMG_WIDTH, 3)))
+        model.add(Activation(self.activation))
+        
+        #batch_normalisation
+        if self.batch_normalization: model.add(BatchNormalization())
+        #max pooling
+        model.add(MaxPooling2D(pool_size=self.pool_size))  
+        if self.dropout_fraction != None:
+            model.add(tf.keras.layers.Dropout(self.dropout_fraction))
+        for i in range(self.num_hidden_cnn_layers-1):
+            #i+2th Convolutional Layer
+        
+            ## Standard filter distribution - same number of filters in all Convolutional layers
+            if self.filter_distribution == "standard":
+                model.add(Conv2D(self.number_of_filters_base, self.filter_size, padding = self.padding, kernel_initializer = self.initializer))
+        
+            ## Double filter distribution - double number of filters in each Convolutional layers
+            elif self.filter_distribution == "double":
+                model.add(Conv2D(2**(i+1)*self.number_of_filters_base, self.filter_size,padding = self.padding, kernel_initializer = self.initializer))
+        
+            ## Halve the filter size in each successive convolutional layers
+            elif self.filter_distribution == "half":
+                model.add(Conv2D(int(self.number_of_filters_base/2**(i+1)), self.filter_size,padding = self.padding, kernel_initializer = self.initializer))
+        
+            model.add(Activation(self.activation))
+        
+            if self.batch_normalization: model.add(BatchNormalization())
+        
+            model.add(MaxPooling2D(pool_size=self.pool_size))
+            if self.dropout_fraction != None:
+                model.add(tf.keras.layers.Dropout(self.dropout_fraction))
+        
+        #Final densely connected layers
+        model.add(Flatten())
+        model.add(Dense(self.dense_neurons, activation = 'sigmoid'))
+        if self.dropout_fraction != None:
+            model.add(tf.keras.layers.Dropout(self.dropout_fraction))
+        model.add(Dense(self.num_classes, activation = 'softmax'))
+        
+        #model.compile(optimizer=self.optimizer,
+        #      loss='categorical_crossentropy',
+        #      metrics=['accuracy'])
+        return model      
+        
     def build_cnndropmodel(self):
         keras.backend.clear_session()
         model = Sequential()
@@ -70,9 +119,10 @@ class ObjectDetection():
         #batch_normalisation
         if self.batch_normalization: model.add(BatchNormalization())
         #max pooling
-        model.add(MaxPooling2D(pool_size=self.pool_size))  
         if self.dropout_fraction != None:
             model.add(tf.keras.layers.Dropout(self.dropout_fraction))
+        model.add(MaxPooling2D(pool_size=self.pool_size))  
+
         for i in range(self.num_hidden_cnn_layers-1):
             #i+2th Convolutional Layer
         
@@ -91,25 +141,71 @@ class ObjectDetection():
             model.add(Activation(self.activation))
         
             if self.batch_normalization: model.add(BatchNormalization())
-        
-            model.add(MaxPooling2D(pool_size=self.pool_size))
+
             if self.dropout_fraction != None:
-                model.add(tf.keras.layers.Dropout(self.dropout_fraction))
+                model.add(tf.keras.layers.Dropout(self.dropout_fraction))        
+            model.add(MaxPooling2D(pool_size=self.pool_size))
+
         
         #Final densely connected layers
         model.add(Flatten())
         model.add(Dense(self.dense_neurons, activation = self.activation, kernel_regularizer='l2', kernel_initializer = self.initializer))
+        if self.dropout_fraction != None:
+            model.add(tf.keras.layers.Dropout(self.dropout_fraction))
         model.add(Dense(self.num_classes, activation = 'softmax'))
         
         #model.compile(optimizer=self.optimizer,
         #      loss='categorical_crossentropy',
         #      metrics=['accuracy'])
         return model      
-        
       
+    def build_cnnmodelsimple(self):
+        #keras.backend.clear_session()
+        model = Sequential()
+        
+        #First CNN layer connecting to input layer
+        model.add(Conv2D(self.number_of_filters_base, self.filter_size, input_shape = (self.IMG_HEIGHT, self.IMG_WIDTH, 3)))
+        model.add(Activation(self.activation))
+        
+        #batch_normalisation
+        if self.batch_normalization: model.add(BatchNormalization())
+        #max pooling
+        model.add(MaxPooling2D(pool_size=self.pool_size))  
+        for i in range(self.num_hidden_cnn_layers-1):
+            #i+2th Convolutional Layer
+        
+            ## Standard filter distribution - same number of filters in all Convolutional layers
+            if self.filter_distribution == "standard":
+                model.add(Conv2D(self.number_of_filters_base, self.filter_size))
+        
+            ## Double filter distribution - double number of filters in each Convolutional layers
+            elif self.filter_distribution == "double":
+                model.add(Conv2D(2**(i+1)*self.number_of_filters_base, self.filter_size))
+        
+            ## Halve the filter size in each successive convolutional layers
+            elif self.filter_distribution == "half":
+                model.add(Conv2D(int(self.number_of_filters_base/2**(i+1)), self.filter_size))
+        
+            model.add(Activation(self.activation))
+        
+            if self.batch_normalization: model.add(BatchNormalization())
+        
+            model.add(MaxPooling2D(pool_size=self.pool_size))
+        
+        #Final densely connected layers
+        model.add(Flatten())
+        model.add(Dense(self.dense_neurons, activation = 'sigmoid'))
+        if self.dropout_fraction != None:
+            model.add(tf.keras.layers.Dropout(self.dropout_fraction))
+        model.add(Dense(self.num_classes, activation = 'softmax'))
+        
+        #model.compile(optimizer=self.optimizer,
+        #      loss='categorical_crossentropy',
+        #      metrics=['accuracy'])
+        return model 
         
     def build_cnnmodel(self):
-        
+        keras.backend.clear_session()
         model = Sequential()
         
         #First CNN layer connecting to input layer

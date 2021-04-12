@@ -47,10 +47,10 @@ except:
 
 #data pre processing
 
-data_augmentation = True
+data_augmentation = False
 
 IMG_SIZE = (224,224)
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 
 
 if data_augmentation == True:
@@ -110,7 +110,7 @@ BASE_MODELS = {
                   "XCPTN" : Xception
               } 
 
-
+'''
 sweep_config = {
   "name": "Bayesian Sweep",
   "method": "bayes",
@@ -140,18 +140,15 @@ sweep_config = {
 }
 
 sweep_id = wandb.sweep(sweep_config, project='CS6910-Assignment2-CNNs', entity='rahulsundar')
-
+'''
 
 def load_pretrained_model():
         tf.keras.backend.clear_session()
-        pretrained_model = BASE_MODELS["IV3"]
-        base = pretrained_model(weights='imagenet', include_top=False)
-        X = base.output
-        X = GlobalAveragePooling2D()(X)
-        X = Dense(256, activation='sigmoid')(X)
-        predictions = Dense(10, activation='softmax')(X)
-        model = Model(inputs=base.input, outputs=predictions)
-
+        pretrained_model = BASE_MODELS["RN50"]
+        new_input = Input(shape=(224, 224, 3), name="input")
+        base = pretrained_model(weights='imagenet', input_tensor=new_input, include_top=True)
+        #model = Model(inputs=base.input)
+        model = Sequential([base,Dense(128, activation='sigmoid'), Dense(10, activation='softmax')])
         # freeze all base model's layers
         for layer in base.layers:
             layer.trainable = False
@@ -177,24 +174,25 @@ def load_pretrained_model_configurable(config):
 
 def transfer_learn():
     config_defaults = dict(
-                dense_neurons = 256,
-                activation = 'sigmoid',
+                dense_neurons =256 ,
+                activation = 'relu',
                 num_classes = 10,
                 optimizer = 'adam',
                 epochs = 5,
-                batch_size = 32, 
+                batch_size = 16, 
                 img_size = (224,224),
-                base_model = "IV3"
+                base_model = "RN50"
             ) 
             
-    wandb.init( config = config_defaults) 
+    wandb.init(project='CS6910-Assignment2-CNNs', entity='rahulsundar', config = config_defaults) 
 
     CONFIG = wandb.config
 
     wandb.run.name = "OBJDET_TransferLearn_" + CONFIG.base_model + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_ep_" + str(CONFIG.epochs) + "_bs_"+str(CONFIG.batch_size) + "_act_" + CONFIG.activation
 
 
-    model = load_pretrained_model_configurable(CONFIG)
+    #model = load_pretrained_model_configurable(CONFIG)
+    model = load_pretrained_model()
     model.summary()
 
     model.compile(
@@ -225,4 +223,7 @@ def transfer_learn():
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     
-    wandb.agent(sweep_id,transfer_learn, count = 15)
+    transfer_learn()
+    
+    
+    #wandb.agent(sweep_id,transfer_learn, count = 15)

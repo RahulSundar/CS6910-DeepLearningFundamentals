@@ -59,7 +59,7 @@ test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 
 train_generator = train_datagen.flow_from_directory(
-    './Data/inaturalist_12K/train2',
+    './Data/inaturalist_12K/train',
     target_size=IMG_SIZE,
     batch_size=BATCH_SIZE,
     class_mode='categorical',
@@ -67,7 +67,7 @@ train_generator = train_datagen.flow_from_directory(
      seed = 123)
     
 validation_generator = train_datagen.flow_from_directory(
-        './Data/inaturalist_12K/validation',
+        './Data/inaturalist_12K/val',
         target_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         class_mode='categorical',
@@ -84,13 +84,13 @@ test_generator = test_datagen.flow_from_directory(
         shuffle = True,
          seed = 123)
 
-
+'''
 #sweep config
 sweep_config = {
   "name": "Bayesian Sweep",
   "method": "bayes",
   "metric":{
-  "name": "validationaccuracy",
+  "name": "val_accuracy",
   "goal": "maximize"
   },
   'early_terminate': {
@@ -116,13 +116,16 @@ sweep_config = {
             "values": [64, 128]
         },
         "dropout_fraction": {
-            "values": [0.2,0.3]
+            "values": [None, 0.2,0.3]
+        },
+        "regularisation":{
+            "values": ["yes", "no"]
         }      
     }
 }
 
-sweep_id = wandb.sweep(sweep_config,project='CS6910-DeepLearningFundamentals-Assignment1', entity='rahulsundar')
-
+sweep_id = wandb.sweep(sweep_config,project = 'CS6910-Assignment2-CNNs', entity='rahulsundar')
+'''
 
 #train function
 def train():
@@ -144,23 +147,21 @@ def train():
             optimizer = 'adam',
             epochs = 5,
             batch_size = 32, 
-            img_size = IMG_SIZE
+            img_size = IMG_SIZE,
+            regularisation = "yes"
         ) 
-    wandb.init(project = 'CS6910-Assignment2-CNNs', config = config_defaults,entity='rahulsundar')
+    wandb.init( config = config_defaults)
     CONFIG = wandb.config
-        
 
+    wandb.run.name = "OBJDET_BAL_" + str(CONFIG.num_hidden_cnn_layers) + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_dro_" + str(CONFIG.dropout_fraction) + "_bs_"+str(CONFIG.batch_size) + "_fd_" + CONFIG.filter_distribution + "_reg_" + CONFIG.regularisation
 
-    wandb.run.name = "OBJDET_" + str(CONFIG.num_hidden_cnn_layers) + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_dro_" + str(CONFIG.dropout_fraction) + "_bs_"+str(CONFIG.batch_size) + "_fd_" + CONFIG.filter_distribution
-
-    def myprint(s, path = './TrainedModel/'+wandb.run.name):
-        with open(path+"mymodelsummary.txt",'w+') as f:
-            print(s, file=f)
-            
             
     objDetn = ObjectDetection(CONFIG.img_size, CONFIG )
     #model = objDetn.build_cnndropmodelnoreg()
-    model = objDetn.build_cnnmodelsimple()
+    if CONFIG.regularisation == "yes":
+        model = objDetn.build_cnndropmodel()
+    else:
+        model = objDetn.build_cnnmodelsimple() #dropout only in the last layer
     model.summary()
 
 
@@ -181,16 +182,19 @@ def train():
                     epochs = CONFIG.epochs, 
                     callbacks=[WandbCallback()]
                     )
-
+    model.evaluate(
+                    test_generator,
+                    batch_size = 32,
+                    callbacks=[WandbCallback()]
+                  )
     model.save('./TrainedModel/'+wandb.run.name)
-    model.summary(print_fn=myprint)
     wandb.finish()
-    return model, history
+    #return model, history
     
     
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     
-    Model, History = train()
-    
+    train()
+    #wandb.agent(sweep_id, train, count = 24)
 

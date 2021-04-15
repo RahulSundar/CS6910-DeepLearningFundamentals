@@ -191,8 +191,8 @@ def transfer_learn():
     wandb.run.name = "OBJDET_TransferLearn_" + CONFIG.base_model + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_ep_" + str(CONFIG.epochs) + "_bs_"+str(CONFIG.batch_size) + "_act_" + CONFIG.activation
 
 
-    #model = load_pretrained_model_configurable(CONFIG)
-    model = load_pretrained_model()
+    model = load_pretrained_model_configurable(CONFIG)
+    #model = load_pretrained_model()
     model.summary()
 
     model.compile(

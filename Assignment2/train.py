@@ -211,7 +211,11 @@ def train():
                     epochs = CONFIG.epochs, 
                     callbacks=[WandbCallback()]
                     )
-
+    model.evaluate(
+                    test_generator,
+                    batch_size = 32,
+                    callbacks=[WandbCallback()]
+                  )
     model.save('./TrainedModel/'+wandb.run.name)
     wandb.finish()
     return model, history

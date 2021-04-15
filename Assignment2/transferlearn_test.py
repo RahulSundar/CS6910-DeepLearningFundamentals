@@ -50,7 +50,7 @@ except:
 data_augmentation = False
 
 IMG_SIZE = (224,224)
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 
 
 if data_augmentation == True:
@@ -86,7 +86,7 @@ train_generator = train_datagen.flow_from_directory(
      seed = 123)
     
 validation_generator = train_datagen.flow_from_directory(
-        './Data/inaturalist_12K/validation',
+        './Data/inaturalist_12K/val',
         target_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         class_mode='categorical',
@@ -146,9 +146,9 @@ def load_pretrained_model():
         tf.keras.backend.clear_session()
         pretrained_model = BASE_MODELS["RN50"]
         new_input = Input(shape=(224, 224, 3), name="input")
-        base = pretrained_model(weights='imagenet', input_tensor=new_input, include_top=True)
+        base = pretrained_model(weights='imagenet', input_tensor=new_input)
         #model = Model(inputs=base.input)
-        model = Sequential([base,Dense(128, activation='sigmoid'), Dense(10, activation='softmax')])
+        model = Sequential([base, Flatten(), Dense(1000, activation='relu', kernel_initializer="he_uniform"), Dense(10, activation='softmax')])
         # freeze all base model's layers
         for layer in base.layers:
             layer.trainable = False
@@ -179,7 +179,7 @@ def transfer_learn():
                 num_classes = 10,
                 optimizer = 'adam',
                 epochs = 5,
-                batch_size = 16, 
+                batch_size = 32, 
                 img_size = (224,224),
                 base_model = "RN50"
             ) 
@@ -198,7 +198,7 @@ def transfer_learn():
     model.compile(
     optimizer=CONFIG.optimizer,  # Optimizer
     # Loss function to minimize
-    loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),#'categorical_crossentropy',
+    loss=tf.keras.losses.CategoricalCrossentropy(),#from_logits=True),#'categorical_crossentropy',
     # List of metrics to monitor
     metrics=['accuracy'],
     )

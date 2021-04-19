@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 
-
+import os
 
 import wandb
 from wandb.keras import WandbCallback
@@ -26,8 +26,8 @@ def class_names(DATAPATH):
     return class_name
     
 class_names = class_names("./Data/inaturalist_12K/test/")
-target_dict = {k: v for v, k in enumerate(np.unique(Class_names))} 
-class_label_names_dict = {str(k): v for k, v in enumerate(np.unique(Class_names))} 
+target_dict = {k: v for v, k in enumerate(np.unique(class_names))} 
+class_label_names_dict = {str(k): v for k, v in enumerate(np.unique(class_names))} 
 # The dimensions of our input image
 img_width,img_height = 128, 128
 
@@ -107,6 +107,8 @@ img_true_label = test_generator[batch][1][img_index]
 plt.figure()
 plt.xlabel(class_label_names_dict[str(np.argmax(img_true_label))])
 plt.imshow(img[0])
+plt.show()
+
 
 
 #Extract the feature maps and feature activation maps
@@ -142,5 +144,4 @@ for _ in range(ROWS):
 		plt.imshow(feature_maps_activation[0, :, :, ix-1], cmap='gray')
 		ix += 1
 # show the figure
-plt.show() 
-
+plt.show()

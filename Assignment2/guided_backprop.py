@@ -156,7 +156,7 @@ test_generator = test_datagen.flow_from_directory(
             class_mode='categorical',
             shuffle = True,
             seed = 1234)
-'''
+
 batch = np.random.choice(int(2000/32))
 img_index = np.random.choice(32)    
 img = test_generator[batch][0][img_index]
@@ -168,7 +168,7 @@ plt.figure()
 plt.xlabel(class_label_names_dict[str(np.argmax(img_true_label))])
 plt.imshow(img[0])
 plt.show()
-'''
+
 
 #Guided backprop testing on a sample image:
 model = tf.keras.models.load_model(MODELPATH)

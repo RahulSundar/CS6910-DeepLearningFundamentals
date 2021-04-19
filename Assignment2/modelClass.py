@@ -19,7 +19,7 @@ from tensorflow.keras.models import Sequential,  Model
 import wandb
 
 
-class ObjectDetection():
+class ImageClassification():
 
     def __init__(self, IMG_SIZE, modelConfigDict, using_pretrained_model = False, base_model = "IRV2" ):
         

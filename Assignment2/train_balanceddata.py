@@ -8,7 +8,7 @@ import pathlib
 
 #
 import tensorflow as tf
-from modelClass import ObjectDetection
+from modelClass import ImageClassification
 
 
 #wandb logging
@@ -156,12 +156,12 @@ def train():
     wandb.run.name = "OBJDET_BAL_" + str(CONFIG.num_hidden_cnn_layers) + "_dn_" + str(CONFIG.dense_neurons) + "_opt_" + CONFIG.optimizer + "_dro_" + str(CONFIG.dropout_fraction) + "_bs_"+str(CONFIG.batch_size) + "_fd_" + CONFIG.filter_distribution + "_reg_" + CONFIG.regularisation
 
             
-    objDetn = ObjectDetection(CONFIG.img_size, CONFIG )
+    img_classifier = ImageClassification(CONFIG.img_size, CONFIG )
     #model = objDetn.build_cnndropmodelnoreg()
     if CONFIG.regularisation == "yes":
-        model = objDetn.build_cnndropmodel()
+        model = img_classifier.build_cnndropmodel()
     else:
-        model = objDetn.build_cnnmodelsimple() #dropout only in the last layer
+        model = img_classifier.build_cnnmodelsimple() #dropout only in the last layer
     model.summary()
 
 

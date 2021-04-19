@@ -8,7 +8,7 @@ import pathlib
 
 #
 import tensorflow as tf
-from modelClass import ObjectDetection
+from modelClass import ImageClassification
 
 
 #wandb logging
@@ -183,13 +183,13 @@ def train():
 
 
        
-    objDetn = ObjectDetection(CONFIG.img_size, CONFIG )
+    img_classifier = ImageClassification(CONFIG.img_size, CONFIG )
     if CONFIG.dropout_location == "all":
-        model = objDetn.build_cnnmodel_all()
+        model = img_classifier.build_cnnmodel_all()
     elif CONFIG.dropout_location == "conv":
-        model = objDetn.build_cnnmodel_conv()
+        model = img_classifier.build_cnnmodel_conv()
     elif CONFIG.dropout_location == "dense":
-        model = objDetn.build_cnnmodel_dense()
+        model = img_classifier.build_cnnmodel_dense()
     
     model.summary()
 

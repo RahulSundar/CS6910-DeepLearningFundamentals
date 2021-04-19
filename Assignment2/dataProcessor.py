@@ -39,9 +39,10 @@ def load_dataset(DATAPATH, IMG_HEIGHT, IMG_WIDTH):
    
     img_data_array=[]
     class_name=[]
-   
+    
     for dir1 in os.listdir(DATAPATH):
-        for file in os.listdir(os.path.join(DATAPATH, dir1)):
+        filelist = shuffle(os.listdir(os.path.join(DATAPATH, dir1)))
+        for file in filelist:
        
             image_path= os.path.join(DATAPATH, dir1,  file)
             image= cv2.imread( image_path, cv2.COLOR_BGR2RGB)
@@ -58,10 +59,10 @@ def load_dataset_batch(DATAPATH, IMG_HEIGHT, IMG_WIDTH, batch_size = None):
     img_data_array=[]
     class_name=[]
    
-    for dir1 in os.listdir(DATAPATH):
+    for dir1 in np.sort(os.listdir(DATAPATH)):
         if dir1[0] != ".":
             ctr = 0
-            for file in os.listdir(os.path.join(DATAPATH, dir1)):
+            for file in np.sort(os.listdir(os.path.join(DATAPATH, dir1))):
                 ctr += 1
                 if batch_size == None:    
                     image_path= os.path.join(DATAPATH, dir1,  file)
@@ -104,6 +105,16 @@ for dir1 in os.listdir(DATAPATH):
             plt.imshow(img)
         
         ctr += 1
+
+
+def class_names(DATAPATH):
+   
+    class_name=[]
+    
+    for dir1 in np.sort(os.listdir(DATAPATH)):
+        class_name.append(dir1)
+    return class_name
+
 #Example:
 '''
 IMG_SIZE = (256,256)

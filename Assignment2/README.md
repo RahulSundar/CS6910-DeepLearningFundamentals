@@ -8,7 +8,7 @@ The link to the wandb project runs:
 https://wandb.ai/rahulsundar/CS6910-Assignment2-CNNs?workspace=user-rahulsundar
 
 The link to the wandb report:
-https://wandb.ai/rahulsundar/CS6910-DeepLearningFundamentals-Assignment1/reports/CS6910-Assignment-1-Feed-Forward-Neural-Network-from-bare-bones-for-Fashion-MNIST-classification--Vmlldzo1Mjk2MTE
+https://wandb.ai/rahulsundar/CS6910-Assignment2-CNNs/reports/CS6910-Assignment-2-Image-classification-and-Object-detection-using-Convolutional-neural-Networks--Vmlldzo2MjI1NDY
 
 ## Part A: Building and training a CNN model from scratch for classification:
 

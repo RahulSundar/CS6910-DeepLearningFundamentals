@@ -1,9 +1,10 @@
-#Contents:
+# Contents:
 Trained weights of the fine tuned YOLOV5s model. 
 The pretrianed models are published by ultralytics in their [repository](https://github.com/ultralytics/yolov5).
 
 Data sets were downloaded from the publicly available datasets of Roboflow.
-#Instructions:
+
+# Instructions:
 
 In order to fine tune the model on your custom dataset, do the following:
 1. Dowload and convert the dataset into the YOLOV5 format. (1. jpg images, 2. txt labels, 3 data.yaml file describing the class names and number of classes, location of training and test data.)

@@ -89,7 +89,7 @@ The commands to run the testing script is simply:
 
 If one aspires to do further analysis, then it is advised that the test script is run in the ipython console:
 
-```run trian.py```
+```run train.py```
 
 ### Visualisation of CNNs:
 

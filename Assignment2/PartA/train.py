@@ -153,7 +153,7 @@ def train():
 
 
     train_generator = train_datagen.flow_from_directory(
-        './Data/inaturalist_12K/train',
+        '../Data/inaturalist_12K/train',
         subset='training',
         target_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
@@ -162,7 +162,7 @@ def train():
         seed = 123)
         
     validation_generator = train_datagen.flow_from_directory(
-            './Data/inaturalist_12K/train',
+            '../Data/inaturalist_12K/train',
             target_size=IMG_SIZE,
             subset = 'validation',
             batch_size=BATCH_SIZE,
@@ -173,7 +173,7 @@ def train():
 
             
     test_generator = test_datagen.flow_from_directory(
-            './Data/inaturalist_12K/test',
+            '../Data/inaturalist_12K/test',
             target_size=IMG_SIZE,
             batch_size=BATCH_SIZE,
             class_mode='categorical',
@@ -216,7 +216,7 @@ def train():
                     batch_size = 32,
                     callbacks=[WandbCallback()]
                   )
-    model.save('./TrainedModel/'+wandb.run.name)
+    model.save('../TrainedModel/'+wandb.run.name)
     wandb.finish()
     return model, history
         

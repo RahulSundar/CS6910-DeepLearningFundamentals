@@ -59,7 +59,7 @@ test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 
 train_generator = train_datagen.flow_from_directory(
-    './Data/inaturalist_12K/train',
+    '../Data/inaturalist_12K/train',
     target_size=IMG_SIZE,
     batch_size=BATCH_SIZE,
     class_mode='categorical',
@@ -67,7 +67,7 @@ train_generator = train_datagen.flow_from_directory(
      seed = 123)
     
 validation_generator = train_datagen.flow_from_directory(
-        './Data/inaturalist_12K/val',
+        '../Data/inaturalist_12K/val',
         target_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         class_mode='categorical',
@@ -77,7 +77,7 @@ validation_generator = train_datagen.flow_from_directory(
 
         
 test_generator = test_datagen.flow_from_directory(
-        './Data/inaturalist_12K/test',
+        '../Data/inaturalist_12K/test',
         target_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         class_mode='categorical',
@@ -187,7 +187,7 @@ def train():
                     batch_size = 32,
                     callbacks=[WandbCallback()]
                   )
-    model.save('./TrainedModel/'+wandb.run.name)
+    model.save('../TrainedModel/'+wandb.run.name)
     wandb.finish()
     #return model, history
     

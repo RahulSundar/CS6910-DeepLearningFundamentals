@@ -66,14 +66,14 @@ def class_names(DATAPATH):
     return class_name
 
 
-class_names = class_names("./Data/inaturalist_12K/test/")
+class_names = class_names("../Data/inaturalist_12K/test/")
 target_dict = {k: v for v, k in enumerate(np.unique(class_names))} 
 class_label_names_dict = {str(k): v for k, v in enumerate(np.unique(class_names))} 
 
 # The dimensions of our input image
 img_width,img_height = 128, 128
 
-img_array, class_labels = load_dataset_batch("./Data/inaturalist_12K/test/", 128,128) 
+img_array, class_labels = load_dataset_batch("../Data/inaturalist_12K/test/", 128,128) 
 img_array = np.array([img_array]).reshape(len(img_array), img_width, img_height,3)
 class_labels_num = [target_dict[class_labels[i]] for i in range(len(class_labels))] 
 
@@ -81,7 +81,7 @@ class_labels_num = [target_dict[class_labels[i]] for i in range(len(class_labels
 test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 test_generator = test_datagen.flow_from_directory(
-            './Data/inaturalist_12K/test',
+            '../Data/inaturalist_12K/test',
             target_size=(img_width,img_height),
             batch_size=32,
             class_mode='categorical',
@@ -89,7 +89,7 @@ test_generator = test_datagen.flow_from_directory(
 # Our target layer: we will visualize the filters from this layer.
 
 #Model trained from scratch
-source_model = keras.models.load_model("./TrainedModel/Best_Model") #Load the best trained model
+source_model = keras.models.load_model("../TrainedModel/Best_Model") #Load the best trained model
 #Transfer learned model
 #source_model = keras.models.load_model("./TrainedModel/Best_TransferlearntModel") #Load the best trained model
 
@@ -99,7 +99,7 @@ layer_dict = {layer.name:layer for layer in source_model.layers}
 print(layer_dict)
 
 test_generator2 = test_datagen.flow_from_directory(
-            './Data/inaturalist_12K/test',
+            '../Data/inaturalist_12K/test',
             target_size=(img_width,img_height),
             batch_size=32,
             class_mode='categorical',

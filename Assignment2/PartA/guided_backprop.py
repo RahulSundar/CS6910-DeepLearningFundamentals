@@ -22,8 +22,8 @@ except:
 
 #Default image size:
 IMG_SIZE = (128, 128)
-DATAPATH = "./Data/inaturalist_12K/test"
-MODELPATH = "./TrainedModel/Best_Model"
+DATAPATH = "../Data/inaturalist_12K/test"
+MODELPATH = "../TrainedModel/Best_Model"
 
 #Functions to process images
 def load_image(path, preprocess=True):
@@ -69,7 +69,6 @@ def deprocess_image(img):
     """Same normalization as in:
     https://github.com/fchollet/keras/blob/master/examples/conv_filter_visualization.py
     """
-    # normalize tensor: center on 0., ensure std is 0.25
     img = img.copy()
     img -= img.mean()
     img /= (img.std() + K.epsilon())
@@ -140,7 +139,7 @@ def guided_backpropagation(MODELPATH, num_sample_images = 10):
 #Execution:
 #----------#
 
-class_names = class_names("./Data/inaturalist_12K/test/")
+class_names = class_names("../Data/inaturalist_12K/test/")
 target_dict = {k: v for v, k in enumerate(np.unique(class_names))} 
 class_label_names_dict = {str(k): v for k, v in enumerate(np.unique(class_names))} 
 
@@ -150,7 +149,7 @@ class_label_names_dict = {str(k): v for k, v in enumerate(np.unique(class_names)
 test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 test_generator = test_datagen.flow_from_directory(
-            './Data/inaturalist_12K/test',
+            '../Data/inaturalist_12K/test',
             target_size=IMG_SIZE,
             batch_size=32,
             class_mode='categorical',

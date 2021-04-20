@@ -25,7 +25,7 @@ def class_names(DATAPATH):
         class_name.append(dir1)
     return class_name
     
-class_names = class_names("./Data/inaturalist_12K/test/")
+class_names = class_names("../Data/inaturalist_12K/test/")
 target_dict = {k: v for v, k in enumerate(np.unique(class_names))} 
 class_label_names_dict = {str(k): v for k, v in enumerate(np.unique(class_names))} 
 # The dimensions of our input image
@@ -35,14 +35,14 @@ img_width,img_height = 128, 128
 test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 test_generator = test_datagen.flow_from_directory(
-            './Data/inaturalist_12K/test',
+            '../Data/inaturalist_12K/test',
             target_size=(img_width,img_height),
             batch_size=32,
             class_mode='categorical',
             shuffle = False)
 # Our target layer: we will visualize the filters from this layer.
 
-source_model = keras.models.load_model("./TrainedModel/Best_Model") #Load the best trained model
+source_model = keras.models.load_model("../TrainedModel/Best_Model") #Load the best trained model
 
 # See `model.summary()` for list of layer names, if you want to change this.
 source_model.summary()

@@ -4,6 +4,12 @@ The purpose of this assignment was three fold
 2. Fine tune a pretrained model on the iNaturalist dataset.
 3. Use a pretrained Object Detection model for a cool application
 
+The link to the wandb project runs:
+https://wandb.ai/rahulsundar/CS6910-Assignment2-CNNs?workspace=user-rahulsundar
+
+The link to the wandb report:
+https://wandb.ai/rahulsundar/CS6910-Assignment2-CNNs/reports/CS6910-Assignment-2-Image-classification-and-Object-detection-using-Convolutional-neural-Networks--Vmlldzo2MjI1NDY
+
 ## Part A: Building and training a CNN model from scratch for classification:
 
 A model class has been implemented in ```modelClass.py``` which provides a variety of options to build CNN models and add dropout, batchnormalisation, etc. 

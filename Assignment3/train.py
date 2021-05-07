@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import RNN, LSTM, GRU, Dense
@@ -8,7 +9,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import EarlyStopping
 
 from dataProcessor import DataProcessing
-from modelClass import Translation
+from modelClass import S2STranslation
 
 import wandb
 from wandb.keras import WandbCallback
@@ -29,19 +30,6 @@ DATAPATH = "/home/ratnamaru/Documents/Acads/Courses/Sem6/CS6910-FDL/GITHUB/CS691
 #By default source language is english and target lang is telugu
 dataBase = DataProcessing(DATAPATH) 
 
-'''
-config_defaults = {
-    "cell_type": str(args.cell_type),
-    "latent_dim": int(args.latent_dim),
-    "hidden": int(args.hidden),
-    "optimiser": str(args.optimiser),
-    "num_encoders": int(args.num_encoders),
-    "num_decoders": int(args.num_decoders),
-    "dropout": float(args.dropout),
-    "epochs": int(args.epochs),
-    "batch_size": int(args.batch_size),
-}
-'''
 
 def train():
 
@@ -53,12 +41,12 @@ def train():
         "numEncoders": 1,
         "numDecoders": 1,
         "dropout": 0.2,
-        "epochs": 15,
+        "epochs": 1,
         "batch_size": 64,
     }
 
 
-    wandb.init(config=config_defaults)
+    wandb.init(config=config_defaults,  project="CS6910-Assignment-3", entity="rahulsundar")
     config = wandb.config
     wandb.run.name = (
         str(config.cell_type)
@@ -81,7 +69,7 @@ def train():
     )
     wandb.run.save()
 
-    modelInit = Translation(config,srcChar2Int=dataBase.source_char2int, tgtChar2Int=dataBase.target_char2int)
+    modelInit = S2STranslation(config,srcChar2Int=dataBase.source_char2int, tgtChar2Int=dataBase.target_char2int)
     
     model = modelInit.build_configurable_model()
     
@@ -109,7 +97,7 @@ def train():
     model.save(os.path.join("./TrainedModels", wandb.run.name))    
     wandb.finish()
     
-
+    #return model
 
 
 if __name__ == "__main__":

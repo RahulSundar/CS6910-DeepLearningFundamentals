@@ -1,4 +1,3 @@
-import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,69 +5,70 @@ import os
 import cv2
 import pathlib
 
-from  matplotlib import pyplot as plt
-import matplotlib.image as mpimg
 
-class DataProcess():
+class DataProcessing():
 
-    def __init__(self, DATAPATH, train_data, val_data, test_data, source_lang, target_lang):
+    def __init__(self, DATAPATH, source_lang = 'en', target_lang = "te"):
     
         self.source_lang = source_lang
         self.target_lang = target_lang
     
+        self.trainpath = os.path.join(DATAPATH, target_lang, "lexicons", target_lang+".translit.sampled.train.tsv")
+        self.valpath = os.path.join(DATAPATH, target_lang, "lexicons", target_lang+".translit.sampled.dev.tsv")
+        self.testpath = os.path.join(DATAPATH, target_lang, "lexicons", target_lang+".translit.sampled.test.tsv")
         self.train = pd.read_csv(
-            "dakshina_dataset_v1.0/te/lexicons/te.translit.sampled.train.tsv",
+            self.trainpath,
             sep="\t",
             names=["tgt", "src", "count"],
         )
-        self.dev = pd.read_csv(
-            "dakshina_dataset_v1.0/te/lexicons/te.translit.sampled.dev.tsv",
+        self.val = pd.read_csv(
+            self.valpath,
             sep="\t",
             names=["tgt", "src", "count"],
         )
         self.test = pd.read_csv(
-            "dakshina_dataset_v1.0/te/lexicons/te.translit.sampled.test.tsv",
+            self.testpath,
             sep="\t",
             names=["tgt", "src", "count"],
         )
 
         # create train data
-        train_data = preprocess(train["src"].to_list(), train["tgt"].to_list())
+        self.train_data = self.preprocess(self.train["src"].to_list(), self.train["tgt"].to_list())
         (
-            train_encoder_input,
-            train_decoder_input,
-            train_decoder_target,
-            source_vocab,
-            target_vocab,
-        ) = train_data
-        source_vocab2int, source_int2vocab = source_vocab
-        target_vocab2int, target_int2vocab = target_vocab
+            self.train_encoder_input,
+            self.train_decoder_input,
+            self.train_decoder_target,
+            self.source_vocab,
+            self.target_vocab,
+        ) = self.train_data
+        self.source_char2int, self.source_int2char = self.source_vocab
+        self.target_char2int, self.target_int2char = self.target_vocab
 
-        # create dev data
-        dev_data = encode(
-            dev["src"].to_list(),
-            dev["tgt"].to_list(),
-            list(source_vocab2int.keys()),
-            list(target_vocab2int.keys()),
-            source_vocab2int=source_vocab2int,
-            target_vocab2int=target_vocab2int,
+        # create val data (only encode function suffices as the dictionary lookup should be kep the same.
+        self.val_data = self.encode(
+            self.val["src"].to_list(),
+            self.val["tgt"].to_list(),
+            list(self.source_char2int.keys()),
+            list(self.target_char2int.keys()),
+            source_char2int=self.source_char2int,
+            target_char2int=self.target_char2int,
         )
-        dev_encoder_input, dev_decoder_input, dev_decoder_target = dev_data
-        source_vocab2int, source_int2vocab = source_vocab
-        target_vocab2int, target_int2vocab = target_vocab
+        self.val_encoder_input, self.val_decoder_input, self.val_decoder_target = self.val_data
+        self.source_char2int, self.source_int2char = self.source_vocab
+        self.target_char2int, self.target_int2char = self.target_vocab
 
         # create test data
-        test_data = encode(
-            test["src"].to_list(),
-            test["tgt"].to_list(),
-            list(source_vocab2int.keys()),
-            list(target_vocab2int.keys()),
-            source_vocab2int=source_vocab2int,
-            target_vocab2int=target_vocab2int,
+        self.test_data = self.encode(
+            self.test["src"].to_list(),
+            self.test["tgt"].to_list(),
+            list(self.source_char2int.keys()),
+            list(self.target_char2int.keys()),
+            source_char2int=self.source_char2int,
+            target_char2int=self.target_char2int,
         )
-        test_encoder_input, test_decoder_input, test_decoder_target = test_data
-        source_vocab2int, source_int2vocab = source_vocab
-        target_vocab2int, target_int2vocab = target_vocab
+        self.test_encoder_input, self.test_decoder_input, self.test_decoder_target = self.test_data
+        self.source_char2int, self.source_int2char = self.source_vocab
+        self.target_char2int, self.target_int2char = self.target_vocab
 
     
 
@@ -88,8 +88,8 @@ class DataProcess():
         source_vocab, target_vocab = None, None
         if source_char2int == None and target_char2int == None:
             print("Generating the dictionary lookups for character to integer mapping and back")
-            source_char2int, source_int2char = dictionary_lookup(source_chars)
-            target_char2int, target_int2char = dictionary_lookup(target_chars)
+            source_char2int, source_int2char = self.dictionary_lookup(source_chars)
+            target_char2int, target_int2char = self.dictionary_lookup(target_chars)
 
             source_vocab = (source_char2int, source_int2char)
             target_vocab = (target_char2int, target_int2char)
@@ -129,12 +129,12 @@ class DataProcess():
             return encoder_input_data, decoder_input_data, decoder_target_data
 
 
-    def preprocess(self):
+    def preprocess(self, source , target):
         source_chars = set()
         target_chars = set()
 
-        source = [str(x) for x in self.source]
-        target = [str(x) for x in self.target]
+        source = [str(x) for x in source]
+        target = [str(x) for x in target]
 
         source_words = []
         target_words = []
@@ -167,5 +167,5 @@ class DataProcess():
         print("Max sequence length for inputs:", max_source_length)
         print("Max sequence length for outputs:", max_target_length)
 
-        return encode(source_words, target_words, source_chars, target_chars)
+        return self.encode(source_words, target_words, source_chars, target_chars)
 

@@ -34,7 +34,7 @@ dataBase = DataProcessing(DATAPATH)
 def train():
 
     config_defaults = {
-        "cell_type": "RNN",
+        "cell_type": "GRU",
         "latentDim": 256,
         "hidden": 128,
         "optimiser": "rmsprop",
@@ -71,8 +71,8 @@ def train():
 
     modelInit = S2STranslation(config,srcChar2Int=dataBase.source_char2int, tgtChar2Int=dataBase.target_char2int)
     
-    model = modelInit.build_configurable_model()
-    
+    #model = modelInit.build_configurable_model()
+    model = modelInit.build_attention_model()
     model.summary()
 
     model.compile(
@@ -95,6 +95,11 @@ def train():
     )
 
     model.save(os.path.join("./TrainedModels", wandb.run.name))    
+
+	acc = test_model(model, config.cell_type, config.numEncoders+1, dataBase.test_encoder_input, dataBase.test, dataBase.target_int2char, dataBase.target_char2int)
+	print(f'Test Accuracy: {acc}')
+	wandb.log({'test_accuracy': acc})
+
     wandb.finish()
     
     #return model

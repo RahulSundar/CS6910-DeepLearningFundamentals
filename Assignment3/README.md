@@ -110,5 +110,9 @@ If one aspires to do further analysis, then it is advised that the test script i
 ```run test.py```
 
 
+### Hyperparameter sweeps:
+
+One can find two colab notebooks which are self contained and they can be run on a GPU based runtime session and the results will be logged accordingly in the user entity's wandb account which alone needs to be changed in the notebook before beginning the run. 
+
 Note: ```Assignment3.csv``` file contains the various configurations sweeped over by wandb and the obtained validation accuracies, losses, etc. 
 It is  better if the system dependencies 1 and 2 mentioned in the beginning of this readme are satisfied.  

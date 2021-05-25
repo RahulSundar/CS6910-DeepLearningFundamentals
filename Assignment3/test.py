@@ -349,6 +349,7 @@ def test_model(
             decoder_inputs = model.input[1]
             decoder_state_input_h = Input(shape=(config.latentDim,), name="input_3")
             decoder_state_input_c = Input(shape=(config.latentDim,), name="input_4")
+            decoder_hidden_state = Input(shape=(None,config["latentDim"]), name = "input_5")
             decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
             #decoder_lstm = model.layers[-3]
             decoder_lstm = model.get_layer(name = "lstm_"+ str(config.numEncoders + config.numDecoders -1))
@@ -367,7 +368,7 @@ def test_model(
             decoder_dense = model.layers[-1]
             decoder_outputs = decoder_dense(hidden_outputs)
 
-            decoder_model = Model(inputs = [encoder_inputs, decoder_inputs] + decoder_states_inputs, outputs = [attention_states, decoder_outputs] +  decoder_states)
+            decoder_model = Model(inputs = [decoder_inputs] + [decoder_hidden_state , decoder_states_inputs], outputs = [decoder_outputs] + decoder_states)
             #decoder_model = Model([decoder_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states )
             
         elif config.cell_type == "GRU" or config.cell_type == "RNN":
@@ -386,11 +387,12 @@ def test_model(
                 encoder_first_outputs, _ = model.get_layer(name = "simple_rnn").output
             encoder_states = [state]
 
-            encoder_model = Model(encoder_inputs, encoder_states)
+            encoder_model = Model(encoder_inputs, outputs = [encoder_first_outputs, encoder_outputs] + encoder_states)
 
             decoder_inputs = model.input[1]
 
             decoder_state = Input(shape=(config.latentDim,), name="input_3")
+            decoder_hidden_state = Input(shape=(None,config["latentDim"]), name = "input_4")
             decoder_states_inputs = [decoder_state]
 
             if config.cell_type == "GRU":
@@ -406,7 +408,7 @@ def test_model(
                     
             attention_layer = AttentionLayer(name='attention_layer')
             #decoder_outputs_att = decoder_ouputs
-            attention_out, attention_states = attention_layer([encoder_first_outputs, decoder_outputs])
+            attention_out, attention_states = attention_layer([decoder_hidden_state, decoder_outputs])
 
             decoder_concat_input = Concatenate(axis=-1, name='concat_layer')([decoder_outputs, attention_out])
 
@@ -416,7 +418,8 @@ def test_model(
             decoder_dense = model.layers[-1]
             decoder_outputs = decoder_dense(hidden_outputs)
 
-            decoder_model = Model(inputs = [encoder_inputs, decoder_inputs] + decoder_states_inputs, outputs = [attention_states, decoder_outputs] +  decoder_states)
+            decoder_model = Model(inputs = [decoder_inputs] + [decoder_hidden_state , decoder_states_inputs], outputs = [decoder_outputs] + decoder_states)
+            
         def decode_sequence(input_seq):
             # Encode the input as state vectors.
             encoder_first_outputs, _, states_value = encoder_model.predict(input_seq)
@@ -437,8 +440,8 @@ def test_model(
                 elif config.cell_type == "RNN" or config.cell_type == "GRU":
                     states_value = states_value[0].reshape((1, config.latentDim))
                     output_tokens, h = decoder_model.predict([target_seq] + [encoder_first_outputs] + [states_value])
-                dec_ind = np.argmax(output_tokens, axis=-1)[0, 0]
-                attention_weights.append((dec_ind, attn_states))
+                #dec_ind = np.argmax(output_tokens, axis=-1)[0, 0]
+                #attention_weights.append((dec_ind, attn_states))
                 # Sample a token
                 sampled_token_index = np.argmax(output_tokens[0, -1, :])
                 sampled_char = dataBase.target_int2char[sampled_token_index]
@@ -458,13 +461,13 @@ def test_model(
                     states_value = [h, c]
                 elif config.cell_type == "RNN" or config.cell_type == "GRU":
                     states_value = [h]
-            return decoded_sentence, attention_weights
+            return decoded_sentence #, attention_weights
 
         acc = 0
         sourcelang = []
         predictions = []
         original = []
-        attention_weights_test = []
+        #attention_weights_test = []
         for i, row in dataBase.test.iterrows():
             input_seq = dataBase.test_encoder_input[i : i + 1]
             decoded_sentence, attention_weights = decode_sequence(input_seq)
@@ -475,7 +478,7 @@ def test_model(
             sourcelang.append(row['src'])
             original.append(row['tgt'])
             predictions.append(decoded_sentence)
-            attention_weights_test.append(attention_weights)
+            #attention_weights_test.append(attention_weights)
             if og_tokens == predicted_tokens:
                 acc += 1
 
@@ -492,7 +495,7 @@ def test_model(
         print(f'Test Accuracy: {acc}')
         wandb.log({'test_accuracy': acc / len(dataBase.test)})
         wandb.finish()
-        return acc / len(dataBase.test) , sourcelang, original, predictions, attention_weights_test
+        return acc / len(dataBase.test) , sourcelang, original, predictions #, attention_weights_test
 
 
 acc = test_model(model, config.cell_type, config.numEncoders+1, dataBase.test_encoder_input, dataBase.test, dataBase.target_int2char, dataBase.target_char2int)

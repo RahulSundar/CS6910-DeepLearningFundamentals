@@ -1,15 +1,13 @@
 # Overview
-The purpose of this assignment was three fold
-1. Building and training a CNN model from scratch for iNaturalist image data classification.
-2. Fine tune a pretrained model on the iNaturalist dataset.
-3. Use a pretrained Object Detection model for a cool application
+The purpose of this assignment was:
+1. Building and training a RNN model from scratch for seq2seq character level Neural machine transliteration.
+2. Implement attention based model.
 
 The link to the wandb project runs:
-https://wandb.ai/rahulsundar/CS6910-Assignment2-CNNs?workspace=user-rahulsundar
+https://wandb.ai/rahulsundar/CS6910-Assignment-3?workspace=user-rahulsundar
 
 The link to the wandb report:
-https://wandb.ai/rahulsundar/CS6910-Assignment2-CNNs/reports/CS6910-Assignment-2-Image-classification-and-Object-detection-using-Convolutional-neural-Networks--Vmlldzo2MjI1NDY
-
+https://wandb.ai/rahulsundar/CS6910-Assignment-3/reports/CS6910-Assignment-3-Seq2seq-Character-level-Neural-Machine-Transliteration--Vmlldzo3MjM4Mjc
 ## Dataset:
 
 The dakshina dataset released by google was used for 
@@ -39,6 +37,7 @@ The python package dependencies are provided in ```requirements.txt``` which can
 pip install -r requirements.txt
 ```
 
+A Bahdanau based attention has been implemented by adapting the code for the bahdanau attention layer class from : https://github.com/thushv89/attention_keras. 
 It is advised to setup a virtual environment if running locally using virtualenv/venv and pyenv for python version handling. Or even better, use Conda. But in this assignent I have not used anaconda package manager. 
 ### Training:
 Wandb framework is used to track the loss and accuracy metrics of training and validation. Moreover, bayesian sweeps have been performed for various hyper parameter configurations. 

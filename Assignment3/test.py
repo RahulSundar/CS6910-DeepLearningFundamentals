@@ -284,6 +284,9 @@ def test_model(
             return decoded_sentence
 
         acc = 0
+        sourcelang = []
+        predictions = []
+        original = []
         for i, row in dataBase.test.iterrows():
             input_seq = dataBase.test_encoder_input[i : i + 1]
             decoded_sentence = decode_sequence(input_seq)
@@ -291,6 +294,9 @@ def test_model(
             predicted_tokens = [dataBase.target_char2int[x] for x in decoded_sentence.rstrip("\n")]
             # if decoded_sentence == row['tgt']:
             #   acc += 1
+            sourcelang.append(row['src'])
+            original.append(row['tgt'])
+            predictions.append(decoded_sentence)
 
             if og_tokens == predicted_tokens:
                 acc += 1
@@ -308,7 +314,7 @@ def test_model(
         print(f'Test Accuracy: {acc}')
         wandb.log({'test_accuracy': acc / len(dataBase.test)})
         wandb.finish()
-        return acc / len(dataBase.test)
+        return acc / len(dataBase.test), sourcelang, original, predictions
 
     elif attention == True:
         wandb.init(config=config_best_attention2,  project="CS6910-Assignment-3", entity="rahulsundar")
@@ -498,5 +504,7 @@ def test_model(
         return acc / len(dataBase.test) , sourcelang, original, predictions #, attention_weights_test
 
 
-acc = test_model(model, config.cell_type, config.numEncoders+1, dataBase.test_encoder_input, dataBase.test, dataBase.target_int2char, dataBase.target_char2int)
-
+acc,sourcelang, original, predictions = test_model(model, config.cell_type, config.numEncoders+1, dataBase.test_encoder_input, dataBase.test, dataBase.target_int2char, dataBase.target_char2int)
+dict2 = [{"input":sourcelang[i], "true": original[i], "predicted": predictions[i]} for i in range(len(sourcelang))] 
+test_predictions = pd.DataFrame(dict2)
+test_predictions.to_csv('predictions_vanilla.csv', index=False, sep='\t')
